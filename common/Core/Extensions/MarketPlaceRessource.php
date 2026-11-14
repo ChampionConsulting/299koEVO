@@ -131,29 +131,48 @@ class MarketPlaceRessource
 
     public function remoteHashMismatch(): bool
     {
+        if (!$this->isInstalled) {
+            return false;
+        }
+
+        if (!empty($this->lastVersion) && !empty($this->version) && version_compare($this->version, $this->lastVersion, '>')) {
+            return false;
+        }
+
         $remoteHash = $this->getRemoteHash();
         if (empty($remoteHash)) {
             return false;
         }
 
-        // Vérifier dans le registre des hashes enregistrés lors de l'installation
         $hashFile = DATA_CORE_EXTENSIONS . 'hashes.json';
-        if (file_exists($hashFile)) {
-            $hashes = \Utils\Util::readJsonFile($hashFile, true) ?: [];
-            $key = $this->type . ':' . $this->slug;
-            $installedHash = $hashes[$key] ?? null;
-            if (!empty($installedHash) && $installedHash !== $remoteHash) {
-                $dir = ($this->type === self::TYPE_PLUGIN) ? (PLUGINS . $this->slug) : (THEMES . $this->slug);
-                if (is_dir($dir) && self::computeDirectoryHash($dir) === $remoteHash) {
-                    $hashes[$key] = $remoteHash;
-                    \Utils\Util::writeJsonFile($hashFile, $hashes);
-                    return false;
-                }
-                return true;
-            }
+        $hashes = file_exists($hashFile) ? (Util::readJsonFile($hashFile, true) ?: []) : [];
+        if (!is_array($hashes)) {
+            $hashes = [];
         }
 
-        return false;
+        $key = $this->type . ':' . $this->slug;
+        $installedHash = $hashes[$key] ?? null;
+
+        if (!empty($installedHash) && $installedHash === $remoteHash) {
+            return false;
+        }
+
+        // Si le hash enregistré est absent ou différent, vérifier l'empreinte réelle du dossier local
+        $dir = ($this->type === self::TYPE_PLUGIN) ? (PLUGINS . $this->slug) : (THEMES . $this->slug);
+        if (!is_dir($dir)) {
+            return false;
+        }
+
+        $localHash = self::computeDirectoryHash($dir);
+        if ($localHash !== '' && $localHash === $remoteHash) {
+            if (is_dir(DATA_CORE_EXTENSIONS) || @mkdir(DATA_CORE_EXTENSIONS, 0755, true)) {
+                $hashes[$key] = $remoteHash;
+                Util::writeJsonFile($hashFile, $hashes);
+            }
+            return false;
+        }
+
+        return true;
     }
 
     public function isSecurityPatch(): bool
