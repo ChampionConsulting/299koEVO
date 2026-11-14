@@ -64,6 +64,11 @@ class CurrentUser
         return self::$instance;
     }
 
+    public static function getInstance(): CurrentUser
+    {
+        return self::get();
+    }
+
     /**
      * Phase d'initialisation explicite (appelée après le boot des plugins)
      */

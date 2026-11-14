@@ -103,6 +103,8 @@
 						{{SHOW.theme}}
 						-
 						{% if IS_LOGGED %}
+							<a href="{% HOOK.user:profile-url('') %}">Mon compte</a>
+							-
 							<a rel="nofollow" href="{% HOOK.user:logout-url('') %}">{{Lang.core-disconnection}}</a>
 							{% if can_access('system:admin-access') %}
 								-
