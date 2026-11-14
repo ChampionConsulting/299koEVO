@@ -262,7 +262,7 @@ html, body.install {
 }
 
 .install-password-wrap input {
-    padding-right: 44px !important;
+    padding-right: 44px;
 }
 
 .install-toggle-pwd {

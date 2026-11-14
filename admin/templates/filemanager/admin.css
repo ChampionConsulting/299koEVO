@@ -163,7 +163,7 @@
 .fm-new-folder-input {
     flex: 1;
     min-width: 200px;
-    margin: 0 !important;
+    margin: 0;
 }
 
 #fm-breadcrumb-container {
@@ -224,10 +224,10 @@
 }
 
 .fm-search-input {
-    padding-left: 2rem !important;
-    margin: 0 !important;
-    font-size: 0.86rem !important;
-    height: 34px !important;
+    padding-left: 2rem;
+    margin: 0;
+    font-size: 0.86rem;
+    height: 34px;
 }
 
 #fm-listview {
