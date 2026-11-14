@@ -115,6 +115,7 @@ class PublicResponse extends Response {
         // Hide page title for auth pages (login, register, profile)
         $hidePageTitle = ($this->hidePageTitle ?? false);
         $this->layout->set('HIDE_PAGE_TITLE', $hidePageTitle);
+        $this->layout->set('CSRF_TOKEN', \Core\Security\Csrf::token());
         return $this->layout->output();
     }
 

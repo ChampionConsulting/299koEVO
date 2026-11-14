@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     initAdminTopNav();
+    initAdminCsrfInjection();
 
     document.querySelectorAll(".list-item-list li i").forEach(function (item) {
         item.addEventListener('click', function () {
@@ -55,6 +56,29 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+function initAdminCsrfInjection() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = meta ? meta.getAttribute('content') : '';
+    if (!csrfToken) return;
+
+    const ensureCsrfInput = function (form) {
+        if (!form || (form.getAttribute('method') || 'get').toLowerCase() !== 'post') return;
+        if (form.querySelector('input[name="_csrf"]')) return;
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '_csrf';
+        input.value = csrfToken;
+        form.appendChild(input);
+    };
+
+    document.querySelectorAll('form[method="post"], form[method="POST"]').forEach(ensureCsrfInput);
+    document.addEventListener('submit', function (e) {
+        if (e.target && e.target.tagName === 'FORM') {
+            ensureCsrfInput(e.target);
+        }
+    }, true);
+}
 
 function initAdminTopNav() {
     const burgerBtn = document.getElementById('admBurgerBtn');

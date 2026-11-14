@@ -140,8 +140,15 @@ class MarketPlaceRessource
         $hashFile = DATA_CORE_EXTENSIONS . 'hashes.json';
         if (file_exists($hashFile)) {
             $hashes = \Utils\Util::readJsonFile($hashFile, true) ?: [];
-            $installedHash = $hashes[$this->type . ':' . $this->slug] ?? null;
+            $key = $this->type . ':' . $this->slug;
+            $installedHash = $hashes[$key] ?? null;
             if (!empty($installedHash) && $installedHash !== $remoteHash) {
+                $dir = ($this->type === self::TYPE_PLUGIN) ? (PLUGINS . $this->slug) : (THEMES . $this->slug);
+                if (is_dir($dir) && self::computeDirectoryHash($dir) === $remoteHash) {
+                    $hashes[$key] = $remoteHash;
+                    \Utils\Util::writeJsonFile($hashFile, $hashes);
+                    return false;
+                }
                 return true;
             }
         }

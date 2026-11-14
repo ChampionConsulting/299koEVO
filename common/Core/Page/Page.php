@@ -194,8 +194,8 @@ class Page
     public function isUnlocked($obj)
     {
         if ($obj->getPassword() == '') return true;
-        $ipHash = sha1((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-        $expected = sha1((string) $obj->getId()) . $obj->getPassword() . $ipHash;
+        $secret = defined('KEY') ? (string)KEY : '299ko';
+        $expected = hash_hmac('sha256', $obj->getId() . '|' . $obj->getPassword() . '|' . \Core\Http\Request::getClientIp(), $secret);
         if (isset($_SESSION['pagePasswords'][$obj->getId()]) && hash_equals((string) $_SESSION['pagePasswords'][$obj->getId()], $expected)) {
             return true;
         }
@@ -204,9 +204,14 @@ class Page
 
     public function unlock($obj, $password)
     {
-        if (hash_equals((string) $obj->getPassword(), sha1(trim((string) $password)))) {
-            $ipHash = sha1((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-            $token = sha1((string) $obj->getId()) . $obj->getPassword() . $ipHash;
+        $stored = (string) $obj->getPassword();
+        $plain = trim((string) $password);
+        $valid = (str_starts_with($stored, '$2y$') || str_starts_with($stored, '$argon2'))
+            ? password_verify($plain, $stored)
+            : hash_equals($stored, sha1($plain));
+        if ($valid) {
+            $secret = defined('KEY') ? (string)KEY : '299ko';
+            $token = hash_hmac('sha256', $obj->getId() . '|' . $stored . '|' . \Core\Http\Request::getClientIp(), $secret);
             $_SESSION['pagePassword'] = $token;
             $_SESSION['pagePasswords'][$obj->getId()] = $token;
             return true;

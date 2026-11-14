@@ -27,15 +27,39 @@ defined('ROOT') or exit('Access denied!');
 class UsersLoginController extends PublicController
 {
 
+    private function sanitizeReturnUrl(?string $url): ?string
+    {
+        if (!is_string($url)) {
+            return null;
+        }
+        $url = trim($url);
+        if ($url === '' || preg_match('/[\r\n\0]/', $url)) {
+            return null;
+        }
+        // Accepter uniquement les chemins relatifs internes commençant par un seul '/' (pas '//' ni '/\')
+        if (str_starts_with($url, '/')) {
+            if (str_starts_with($url, '//') || str_starts_with($url, '/\\')) {
+                return null;
+            }
+            return $url;
+        }
+        // Ou les URLs complètes strictement rattachées à siteUrl
+        $siteUrl = rtrim((string)$this->core->getConfigVal('siteUrl'), '/');
+        if ($siteUrl !== '' && ($url === $siteUrl || str_starts_with($url, $siteUrl . '/'))) {
+            return $url;
+        }
+        return null;
+    }
+
     public function login()
     {
         // Traiter les messages personnalisés pour les redirections d'actions (Phase Guest Actions)
         $msgType = $_GET['msg'] ?? null;
         $poiName = $_GET['poi_name'] ?? null;
-        $returnUrl = $_GET['return_url'] ?? $_GET['redirect'] ?? null;
+        $returnUrl = $this->sanitizeReturnUrl($_GET['return_url'] ?? $_GET['redirect'] ?? null);
         
         // Stocker l'URL de retour en session pour rediriger après connexion
-        if ($returnUrl) {
+        if ($returnUrl !== null) {
             $_SESSION['login_return_url'] = $returnUrl;
         }
         
@@ -251,9 +275,9 @@ class UsersLoginController extends PublicController
                 $this->core->redirect($this->router->generate('admin'));
             } else {
                 // Utilisateur normal : rediriger vers l'URL de retour ou le profil
-                $returnUrl = $_SESSION['login_return_url'] ?? null;
+                $returnUrl = $this->sanitizeReturnUrl($_SESSION['login_return_url'] ?? null);
                 unset($_SESSION['login_return_url']);
-                if ($returnUrl) {
+                if ($returnUrl !== null) {
                     $this->core->redirect($returnUrl);
                 } else {
                     $this->core->redirect($this->router->generate('profile'));

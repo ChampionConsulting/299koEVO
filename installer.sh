@@ -213,7 +213,11 @@ location / {
     autoindex off;
 }
 
-location ~* \.(json|tpl|ini|env|sql|log)$ {
+location ~* \.(json|tpl|ini|env|sql|sqlite|sqlite3|db|db-shm|db-wal|log|bak|old|swp|phar|sh)$ {
+    deny all;
+}
+
+location ~ ^/(data|upload)/.*\.(php|phtml|phar|pl|py|sh|cgi)$ {
     deny all;
 }
 

@@ -133,8 +133,8 @@ class Cache
      */
     public function deleteByTag(string $tag): void {
         foreach (glob($this->cache_dir . '*' . $this->ext) as $file) {
-            $data = @unserialize(file_get_contents($file));
-            if (in_array($tag, $data['tags'] ?? [])) {
+            $data = @unserialize((string)file_get_contents($file), ['allowed_classes' => [\stdClass::class]]);
+            if (is_array($data) && in_array($tag, $data['tags'] ?? [])) {
                 unlink($file);
             }
         }
@@ -150,7 +150,7 @@ class Cache
      */
     public function clean(): void {
         foreach (glob($this->cache_dir . '*' . $this->ext) as $file) {
-            $data = @unserialize(file_get_contents($file));
+            $data = @unserialize((string)file_get_contents($file), ['allowed_classes' => [\stdClass::class]]);
             if (!is_array($data) || ($data['expire'] ?? 0) < time()) {
                 unlink($file);
             }
@@ -194,7 +194,7 @@ class Cache
             return ob_get_clean();
         }
         $buffered = ob_get_clean();
-        extract($this->buffer);
+        extract($this->buffer, EXTR_SKIP);
         $this->set($key, $buffered, $duration, $tags, $files);
         return $buffered;
     }

@@ -72,4 +72,76 @@ class Request
     public function getMethod(): string {
         return $_SERVER['REQUEST_METHOD'];
     }
+
+    /**
+     * Checks whether the immediate peer IP is a trusted reverse proxy.
+     */
+    public static function isTrustedProxy(?string $remoteAddr = null): bool
+    {
+        $addr = $remoteAddr ?? ($_SERVER['REMOTE_ADDR'] ?? '');
+        if ($addr === '') {
+            return false;
+        }
+        $trusted = ['127.0.0.1', '::1'];
+        $envTrusted = $_ENV['TRUSTED_PROXIES'] ?? ($_SERVER['TRUSTED_PROXIES'] ?? '');
+        if (is_string($envTrusted) && $envTrusted !== '') {
+            foreach (explode(',', $envTrusted) as $proxy) {
+                $proxy = trim($proxy);
+                if ($proxy !== '') {
+                    $trusted[] = $proxy;
+                }
+            }
+        }
+        return in_array($addr, $trusted, true);
+    }
+
+    /**
+     * Returns validated client IP, trusting forwarded headers only from trusted proxies.
+     */
+    public static function getClientIp(): string
+    {
+        $remoteAddr = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+        if (!self::isTrustedProxy($remoteAddr)) {
+            return $remoteAddr;
+        }
+
+        $candidates = [];
+        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            $candidates[] = trim((string)$_SERVER['HTTP_CF_CONNECTING_IP']);
+        }
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $parts = explode(',', (string)$_SERVER['HTTP_X_FORWARDED_FOR']);
+            if (!empty($parts[0])) {
+                $candidates[] = trim($parts[0]);
+            }
+        }
+        foreach ($candidates as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+                return $ip;
+            }
+        }
+        return $remoteAddr;
+    }
+
+    /**
+     * Detects HTTPS safely, ignoring spoofed X-Forwarded-* from untrusted peers.
+     */
+    public static function isHttps(): bool
+    {
+        if (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
+            return true;
+        }
+        if (($_SERVER['SERVER_PORT'] ?? null) == 443) {
+            return true;
+        }
+        if (self::isTrustedProxy()) {
+            if (strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') {
+                return true;
+            }
+            if (strtolower((string)($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')) === 'on') {
+                return true;
+            }
+        }
+        return false;
+    }
 }

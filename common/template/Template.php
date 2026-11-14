@@ -183,7 +183,15 @@ class Template
             if (is_bool($val)) {
                 echo $val ? 'TRUE' : '';
             } else {
-                echo $val;
+                $strName = (string)$name;
+                $isRaw = preg_match('/\|\s*raw\b/i', $strName) === 1;
+                $trimmed = trim($strName);
+                $isTrustedContainer = in_array($trimmed, ['CONTENT', 'show.scriptTags', 'SHOW.scriptTags', 'show.linkTags', 'SHOW.linkTags'], true) || str_ends_with($trimmed, '_TPL');
+                $output = (string)$val;
+                if (!$isRaw && !$isTrustedContainer) {
+                    $output = \Utils\Sanitizer::stripXssVectors($output);
+                }
+                echo $output;
             }
         }
     }
@@ -492,7 +500,18 @@ class Template
                         }
                         break;
                     case 'raw':
-                        // No-op: the engine does not escape by default
+                        // Explicit raw bypass
+                        break;
+                    case 'escape':
+                    case 'e':
+                        if (is_string($val) || is_numeric($val)) {
+                            $val = htmlspecialchars((string)$val, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                        }
+                        break;
+                    case 'clean_html':
+                        if (is_string($val)) {
+                            $val = \Utils\Sanitizer::cleanHtml($val);
+                        }
                         break;
                     case 'slice':
                         if ($filterArgs) {

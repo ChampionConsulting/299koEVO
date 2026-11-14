@@ -54,13 +54,34 @@ class UpdaterManualManager
         return true;
     }
 
+    private function isSafeRelativePath(string $relPath): bool
+    {
+        if ($relPath === '' || strpos($relPath, "\0") !== false) {
+            return false;
+        }
+        $normalized = ltrim(str_replace('\\', '/', $relPath), '/');
+        if (
+            preg_match('/^[a-zA-Z]:/', $normalized) ||
+            $normalized === '..' ||
+            str_starts_with($normalized, '../') ||
+            str_contains($normalized, '/../') ||
+            str_ends_with($normalized, '/..')
+        ) {
+            return false;
+        }
+        return true;
+    }
+
     protected function processFiles(): void
     {
         $folder = $this->updatePath . 'files';
         $itemsToSave = Util::scanDirRecursive($folder);
         $dirs = [];
         foreach ($itemsToSave['dir'] as $dir) {
-            $dirs[] = str_replace($folder, '', $dir);
+            $rel = ltrim(str_replace($folder, '', $dir), '/\\');
+            if ($this->isSafeRelativePath($rel)) {
+                $dirs[] = $rel;
+            }
         }
 
         foreach ($dirs as $dir) {
@@ -69,15 +90,24 @@ class UpdaterManualManager
             }
         }
         foreach ($itemsToSave['file'] as $file) {
-            copy($file, ROOT . str_replace($folder, '', $file));
+            $rel = ltrim(str_replace($folder, '', $file), '/\\');
+            if ($this->isSafeRelativePath($rel)) {
+                copy($file, ROOT . $rel);
+            }
         }
     }
 
     protected function deleteFiles(): void
     {
         $files = Util::readJsonFile($this->updatePath . 'deleted.json');
+        if (!is_array($files)) {
+            return;
+        }
         foreach ($files as $file) {
-            @unlink(ROOT . $file);
+            if (is_string($file) && $this->isSafeRelativePath($file)) {
+                $rel = ltrim(str_replace('\\', '/', $file), '/');
+                @unlink(ROOT . $rel);
+            }
         }
     }
 

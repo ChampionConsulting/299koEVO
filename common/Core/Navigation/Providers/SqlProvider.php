@@ -335,7 +335,7 @@ class SqlProvider implements ConditionProviderInterface
 
     public function getColumns(string $table): array
     {
-        if (!$this->isTableAllowed($table)) return [];
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !$this->isTableAllowed($table)) return [];
         $db = Database::getInstance();
         $cols = [];
         try {

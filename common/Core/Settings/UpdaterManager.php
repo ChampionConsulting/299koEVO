@@ -341,14 +341,31 @@ class UpdaterManager
 
     protected function rewritePathFile($filename, $ignoreExist = false)
     {
-        if (substr($filename, 0, 7) === 'plugin/') {
-            return $this->treatPlugin($filename, $ignoreExist);
-        } elseif (substr($filename, 0, 6) === 'theme/') {
-            return $this->treatTheme($filename);
-        } elseif (substr($filename, 0, 7) === 'common/') {
-            return $this->treatCommon($filename);
+        $clean = ltrim(str_replace('\\', '/', (string) $filename), '/');
+        if (
+            $clean === '' ||
+            $clean === '..' ||
+            str_starts_with($clean, '../') ||
+            str_contains($clean, '/../') ||
+            str_ends_with($clean, '/..') ||
+            $clean === 'data' ||
+            str_starts_with($clean, 'data/') ||
+            $clean === 'install.php' ||
+            $clean === '.env' ||
+            $clean === '.git' ||
+            str_starts_with($clean, '.git/') ||
+            str_starts_with($clean, '.github/')
+        ) {
+            return false;
+        }
+        if (substr($clean, 0, 7) === 'plugin/') {
+            return $this->treatPlugin($clean, $ignoreExist);
+        } elseif (substr($clean, 0, 6) === 'theme/') {
+            return $this->treatTheme($clean);
+        } elseif (substr($clean, 0, 7) === 'common/') {
+            return $this->treatCommon($clean);
         } else {
-            return ROOT . $filename;
+            return ROOT . $clean;
         }
     }
 
@@ -401,6 +418,31 @@ class UpdaterManager
             logg("Cannot open ZIP file: $zipFile", 'ERROR');
             $this->rrmdir($tempDir);
             return false;
+        }
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entryName = $zip->getNameIndex($i);
+            $normalized = $entryName === false ? '' : str_replace('\\', '/', $entryName);
+            $opsys = 0;
+            $attr = 0;
+            $isSymlink = $zip->getExternalAttributesIndex($i, $opsys, $attr) && $opsys === \ZipArchive::OPSYS_UNIX && ((($attr >> 16) & 0170000) === 0120000);
+            if (
+                $entryName === false ||
+                strpos($entryName, "\0") !== false ||
+                str_starts_with($normalized, '/') ||
+                preg_match('/^[a-zA-Z]:/', $normalized) ||
+                $normalized === '..' ||
+                str_starts_with($normalized, '../') ||
+                str_contains($normalized, '/../') ||
+                str_ends_with($normalized, '/..') ||
+                $isSymlink
+            ) {
+                logg("Unsafe ZIP entry rejected: " . (string)$entryName, 'ERROR');
+                $zip->close();
+                @unlink($zipFile);
+                $this->rrmdir($tempDir);
+                return false;
+            }
         }
 
         $zip->extractTo($extractPath);

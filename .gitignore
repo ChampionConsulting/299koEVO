@@ -1,7 +1,7 @@
-data/cache/
-data/logs/
+data/
 *.log
 .DS_Store
+AUDIT_CMS/
 
 # Themes : seul le thème de secours par défaut reste dans le CMS
 theme/*

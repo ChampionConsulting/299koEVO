@@ -282,7 +282,14 @@ class PageItem extends \Core\Storage\JsonActiveRecord implements ResourceInterfa
 
     public function setPassword($val)
     {
-        $this->attributes['password'] = ($val == '') ? $val : sha1(trim($val));
+        $val = trim((string)$val);
+        if ($val === '') {
+            $this->attributes['password'] = '';
+        } elseif (str_starts_with($val, '$2y$') || str_starts_with($val, '$argon2') || preg_match('/^[a-f0-9]{40}$/i', $val)) {
+            $this->attributes['password'] = $val;
+        } else {
+            $this->attributes['password'] = password_hash($val, PASSWORD_DEFAULT);
+        }
     }
 
     public function setImg($val)

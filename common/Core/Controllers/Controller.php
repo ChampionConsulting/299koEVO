@@ -91,16 +91,39 @@ abstract class Controller {
             $token = $this->jsonData['_csrf'];
         }
 
-        if ($token === null || $token === '') {
-            return;
-        }
+        if ($token !== null && $token !== '') {
+            if (Csrf::validate((string)$token, false)) {
+                return;
+            }
+        } else {
+            // Vérification compatibilité jeton utilisateur legacy (champ 'token')
+            $legacyToken = $_POST['token'] ?? ($this->jsonData['token'] ?? null);
+            if (is_string($legacyToken) && $legacyToken !== '') {
+                $currentUser = \Core\Auth\UsersManager::getCurrentUser();
+                $userToken = $currentUser ? (string)($currentUser->token ?? '') : '';
+                if (($userToken !== '' && hash_equals($userToken, $legacyToken)) || Csrf::validate($legacyToken, false)) {
+                    return;
+                }
+            } else {
+                // Sans jeton explicite : bloquer tout POST cross-site et tout AdminController sans Origin/Referer même hôte
+                $secFetchSite = strtolower((string)($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''));
+                $originOrReferer = (string)($_SERVER['HTTP_ORIGIN'] ?? ($_SERVER['HTTP_REFERER'] ?? ''));
+                $originHost = $originOrReferer !== '' ? strtolower((string)(parse_url($originOrReferer, PHP_URL_HOST) ?? '')) : '';
+                $currentHost = strtolower(explode(':', (string)($_SERVER['HTTP_HOST'] ?? ''))[0]);
 
-        if (Csrf::validate($token, false)) {
-            return;
+                $isCrossOriginHeader = ($secFetchSite === 'cross-site')
+                    || ($originHost !== '' && ($currentHost === '' || !hash_equals($currentHost, $originHost)));
+                $missingSameOriginForAdmin = ($this instanceof AdminController)
+                    && ($originHost === '' || $currentHost === '' || !hash_equals($currentHost, $originHost));
+
+                if (!$isCrossOriginHeader && !$missingSameOriginForAdmin) {
+                    return;
+                }
+            }
         }
 
         $sessionToken = $_SESSION['_csrf_token'] ?? 'NONE';
-        $this->logger->warning('CSRF token mismatch on ' . ($_SERVER['REQUEST_URI'] ?? '') . ' | POST=' . substr((string)$token, 0, 12) . '... | SESSION=' . substr((string)$sessionToken, 0, 12) . '... | SID=' . session_id());
+        $this->logger->warning('CSRF validation failed on ' . ($_SERVER['REQUEST_URI'] ?? '') . ' | POST=' . substr((string)($token ?? ''), 0, 12) . '... | SESSION=' . substr((string)$sessionToken, 0, 12) . '... | SID=' . session_id());
 
         if ($this->request->isAjax() || stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
             header('Content-Type: application/json', true, 400);

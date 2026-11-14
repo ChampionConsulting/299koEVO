@@ -193,7 +193,13 @@ class MarketPlaceManager
             return false;
         }
         
-        $zipPath = CACHE . 'tmp.zip';
+        $safeSlug = preg_replace('/[^a-zA-Z0-9_\-]/', '', (string)$ressource->slug);
+        if ($safeSlug === '' || $safeSlug !== (string)$ressource->slug) {
+            $this->logger->error('Unable to install ressource - invalid slug: ' . $ressource->slug);
+            return false;
+        }
+
+        $zipPath = CACHE . 'tmp_' . $safeSlug . '_' . bin2hex(random_bytes(8)) . '.zip';
         $written = file_put_contents($zipPath, $resp['body']);
         if ($written === false) {
             $this->logger->error('Unable to write ZIP file to: ' . $zipPath);
@@ -209,13 +215,20 @@ class MarketPlaceManager
         }
 
         $zip = new ZipArchive();
-        if ($zip->open(CACHE . 'tmp.zip') === true) {
+        if ($zip->open($zipPath) === true) {
+            if (!$this->isSafeZip($zip)) {
+                $zip->close();
+                @unlink($zipPath);
+                $this->logger->error('Unsafe ZIP archive (Zip Slip or symlink) rejected for ' . $ressource->slug);
+                return false;
+            }
+
             $targetDir = $ressource->type === MarketPlaceRessource::TYPE_PLUGIN ? PLUGINS : THEMES;
-            $pluginDir = $targetDir . $ressource->slug . DS;
+            $pluginDir = $targetDir . $safeSlug . DS;
             
             // Vérifier si le ZIP contient déjà le dossier parent ou les fichiers directement
             $firstEntry = $zip->getNameIndex(0);
-            $hasParentDir = $firstEntry !== false && strpos($firstEntry, $ressource->slug . '/') === 0;
+            $hasParentDir = $firstEntry !== false && strpos($firstEntry, $safeSlug . '/') === 0;
             
             if ($hasParentDir) {
                 // Le ZIP contient déjà le dossier parent, extraire directement
@@ -230,19 +243,21 @@ class MarketPlaceManager
             
             $zip->close();
 
-            // Mettre à jour l'horodatage des fichiers extraits pour forcer l'invalidation des caches
-            $this->touchDirectoryRecursive($hasParentDir ? ($targetDir . $ressource->slug) : $pluginDir);
+            $extractedDir = $hasParentDir ? ($targetDir . $safeSlug) : rtrim($pluginDir, DS);
 
-            // Enregistrer l'empreinte (hash) de la version installée pour le suivi automatique des correctifs
-            $installedHash = $ressource->getRemoteHash() ?: (file_exists(CACHE . 'tmp.zip') ? sha1_file(CACHE . 'tmp.zip') : null);
+            // Mettre à jour l'horodatage des fichiers extraits pour forcer l'invalidation des caches
+            $this->touchDirectoryRecursive($extractedDir);
+
+            // Enregistrer l'empreinte (hash) d'arborescence de la version installée pour le suivi automatique des correctifs
+            $installedHash = $ressource->getRemoteHash() ?: MarketPlaceRessource::computeDirectoryHash($extractedDir);
             if ($installedHash) {
                 $hashFile = DATA_CORE_EXTENSIONS . 'hashes.json';
                 $hashes = file_exists($hashFile) ? (\Utils\Util::readJsonFile($hashFile, true) ?: []) : [];
-                $hashes[$ressource->type . ':' . $ressource->slug] = $installedHash;
+                $hashes[$ressource->type . ':' . $safeSlug] = $installedHash;
                 \Utils\Util::writeJsonFile($hashFile, $hashes);
             }
 
-            unlink(CACHE . 'tmp.zip');
+            @unlink($zipPath);
             $this->runAfterUpdatePlugin($ressource);
 
             // Invalider immédiatement le cache de la marketplace (plugins et thèmes)
@@ -257,8 +272,42 @@ class MarketPlaceManager
             $this->logger->info($ressource->slug . ' correctly installed');
             return true;
         }
+        @unlink($zipPath);
         $this->logger->error('Unable to install ressource ' . $ressource->slug . ' (zip error)');
         return false;
+    }
+
+    /**
+     * Valide qu'une archive ZIP ne contient pas de traversée de répertoire (Zip Slip) ni de liens symboliques.
+     */
+    private function isSafeZip(ZipArchive $zip): bool
+    {
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if ($name === false || strpos($name, "\0") !== false) {
+                return false;
+            }
+            $normalized = str_replace('\\', '/', $name);
+            if (
+                str_starts_with($normalized, '/') ||
+                preg_match('/^[a-zA-Z]:/', $normalized) ||
+                $normalized === '..' ||
+                str_starts_with($normalized, '../') ||
+                str_contains($normalized, '/../') ||
+                str_ends_with($normalized, '/..')
+            ) {
+                return false;
+            }
+            $opsys = 0;
+            $attr = 0;
+            if ($zip->getExternalAttributesIndex($i, $opsys, $attr) && $opsys === ZipArchive::OPSYS_UNIX) {
+                $mode = ($attr >> 16) & 0170000;
+                if ($mode === 0120000) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     protected function touchDirectoryRecursive(string $dir): void

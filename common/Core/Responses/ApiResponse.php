@@ -30,13 +30,32 @@ class ApiResponse extends Response
     public $body = null;
 
     protected $headers = [
-        "Access-Control-Allow-Origin: *",
         "Content-Type: application/json; charset=UTF-8",
         "Cache-Control: no-cache",
         "Pragma: no-cache"
     ];
 
+    /**
+     * Explicit opt-in CORS header for public cross-origin endpoints.
+     */
+    public function allowCors(string $origin = '*'): void
+    {
+        $this->headers[] = "Access-Control-Allow-Origin: " . $origin;
+        if ($origin !== '*') {
+            $this->headers[] = "Vary: Origin";
+        }
+    }
+
     public function output():string {
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        if ($origin !== '') {
+            $originHost = strtolower((string)(parse_url($origin, PHP_URL_HOST) ?? ''));
+            $currentHost = strtolower(explode(':', (string)($_SERVER['HTTP_HOST'] ?? ''))[0]);
+            if ($originHost !== '' && $currentHost !== '' && hash_equals($currentHost, $originHost)) {
+                header("Access-Control-Allow-Origin: " . $origin, true);
+                header("Vary: Origin", true);
+            }
+        }
         foreach($this->headers as $header){
 			header($header,true);
 		};

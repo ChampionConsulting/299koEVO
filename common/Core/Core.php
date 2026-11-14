@@ -590,11 +590,7 @@ class Core
     public function makeSiteUrl()
     {
         $siteUrl = str_replace(array('install.php', '/admin', '/index.php'), array('', '', ''), $_SERVER['SCRIPT_NAME']);
-        $isSecure = false;
-        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on')
-            $isSecure = true;
-        elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' || !empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] == 'on')
-            $isSecure = true;
+        $isSecure = \Core\Http\Request::isHttps();
         $REQUEST_PROTOCOL = $isSecure ? 'https' : 'http';
         $siteUrl = $REQUEST_PROTOCOL . '://' . $_SERVER['HTTP_HOST'] . $siteUrl;
         $pos = mb_strlen($siteUrl) - 1;
@@ -963,19 +959,12 @@ class Core
                 if (
                     !@file_put_contents(
                         DATA . '.htaccess',
-                        "<IfModule mod_authz_core.c>
-                        # Apache 2.4
-                        Require all denied
-                    </IfModule>
-                    <IfModule !mod_authz_core.c>
-                        # Apache 2.2
-                        Order deny,allow
-                        Deny from all
-                    </IfModule>",
-                        0604
+                        "<IfModule mod_authz_core.c>\n    # Apache 2.4\n    Require all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n    # Apache 2.2\n    Order deny,allow\n    Deny from all\n</IfModule>\n\n<FilesMatch \"\\.(php|phtml|phar|sqlite|sqlite3|db|db-shm|db-wal|json|log|sql)$\">\n    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>\n    <IfModule !mod_authz_core.c>\n        Order deny,allow\n        Deny from all\n    </IfModule>\n</FilesMatch>\n\n<IfModule mod_php.c>\n    php_flag engine off\n</IfModule>\nOptions -ExecCGI -Indexes\n"
                     )
                 )
                     $install = false;
+                else
+                    @chmod(DATA . '.htaccess', 0604);
             }
             if (!is_dir(DATA_PLUGIN) && (!@mkdir(DATA_PLUGIN) || !@chmod(DATA_PLUGIN, 0755)))
                 $install = false;

@@ -30,7 +30,7 @@ class RateLimiter
      */
     public function check(string $key, int $limit = 60, int $windowSeconds = 60): bool
     {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = \Core\Http\Request::getClientIp() ?: 'unknown';
         $fileKey = md5($ip . '_' . $key);
         $file = $this->cacheDir . $fileKey;
 

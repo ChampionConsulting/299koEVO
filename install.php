@@ -292,7 +292,7 @@ if (count($_POST) > 0) {
         }
 	}
 	include(DATA . 'key.php');
-    $adminPwd = hash_hmac('sha1', $adminPwdPlain, KEY);
+    $adminPwd = password_hash($adminPwdPlain, PASSWORD_DEFAULT);
     $config = [
         'siteName' => "SiteName",
         'siteDesc' => "Description",

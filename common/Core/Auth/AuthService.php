@@ -841,9 +841,7 @@ class AuthService
             'hash' => hash_hmac('sha256', $user->email . ':' . $pwd, $secret)
         ]));
 
-        $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') 
-                    || ($_SERVER['SERVER_PORT'] == 443)
-                    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+        $isSecure = \Core\Http\Request::isHttps();
         $isLocal = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']) || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false || strpos($_SERVER['HTTP_HOST'] ?? '', '.base') !== false;
         if ($isLocal) {
             $isSecure = false;

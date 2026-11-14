@@ -38,10 +38,11 @@ if (defined('ROOT') && defined('DS')) {
 ini_set('session.gc_maxlifetime', $sessionLifetime);
 ini_set('session.cookie_lifetime', $sessionLifetime);
 
-// Détection robuste du HTTPS (gère les proxys comme Cloudflare ou Nginx)
+// Détection robuste du HTTPS (n'accepte X-Forwarded-Proto que depuis un reverse-proxy local de confiance)
+$isTrustedProxy = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true);
 $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') 
-            || ($_SERVER['SERVER_PORT'] == 443)
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+            || (($_SERVER['SERVER_PORT'] ?? null) == 443)
+            || ($isTrustedProxy && isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
 // Force secure false si on est sur localhost ou IP locale pour éviter les blocages de navigateurs
 $isLocal = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']) || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false || strpos($_SERVER['HTTP_HOST'] ?? '', '.base') !== false;

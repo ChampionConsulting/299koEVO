@@ -33,7 +33,7 @@ if (isset($_SERVER['REQUEST_URI'])
 // Safeguard 1: Early exit for vulnerability probes & sensitive scanners
 // Cuts off scrapers/bots targeting .env, .git, phpinfo, etc. in 0.1ms without touching MySQL/CMS
 $reqUri = strtolower($_SERVER['REQUEST_URI'] ?? '');
-if (preg_match('/\.(env|git|aws|sql|bak|backup|old|save|swp|temp|tmp|yml|yaml|ini|conf|config|cfg|log|tar|tar\.gz|tgz|zip|rar|7z|sh|bash|key|pem|crt|cer|pfx|p12|id_rsa)(\?|$)/i', $reqUri)
+if (preg_match('/\.(env|git|aws|sql|sqlite|sqlite3|db|db-shm|db-wal|phar|bak|backup|old|save|swp|temp|tmp|yml|yaml|ini|conf|config|cfg|log|tar|tar\.gz|tgz|zip|rar|7z|sh|bash|key|pem|crt|cer|pfx|p12|id_rsa)(\?|$)/i', $reqUri)
     || preg_match('/(wp-config|phpinfo|_phpinfo|pi\.php|info\.php|test\.php|web\.xml|settings\.py|\.aws\/|bedrock|phpmyadmin|adminer|eval-stdin|invokefunction|database\.sql|\.git\/|\.pypirc)/i', $reqUri)) {
     header("HTTP/1.1 404 Not Found");
     header("Content-Type: text/plain; charset=utf-8");
@@ -43,12 +43,20 @@ if (preg_match('/\.(env|git|aws|sql|bak|backup|old|save|swp|temp|tmp|yml|yaml|in
 
 // Safeguard 2: Anti-Burst / Aggressive Scraper Shield
 // Throttles automated bots sending abnormal bursts (>12 req in 3s or >45 req/min without valid session)
-$clientIp = $_SERVER['HTTP_CF_CONNECTING_IP'] 
-    ?? $_SERVER['HTTP_X_FORWARDED_FOR'] 
-    ?? $_SERVER['REMOTE_ADDR'] 
-    ?? '';
-if (strpos($clientIp, ',') !== false) {
-    $clientIp = trim(explode(',', $clientIp)[0]);
+$remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+$clientIp = $remoteAddr;
+if (in_array($remoteAddr, ['127.0.0.1', '::1'], true)) {
+    $forwardedIp = $_SERVER['HTTP_CF_CONNECTING_IP']
+        ?? $_SERVER['HTTP_X_FORWARDED_FOR']
+        ?? '';
+    if (is_string($forwardedIp) && $forwardedIp !== '') {
+        if (strpos($forwardedIp, ',') !== false) {
+            $forwardedIp = trim(explode(',', $forwardedIp)[0]);
+        }
+        if (filter_var(trim($forwardedIp), FILTER_VALIDATE_IP) !== false) {
+            $clientIp = trim($forwardedIp);
+        }
+    }
 }
 
 if ($clientIp !== '' && !in_array($clientIp, ['127.0.0.1', '::1', '192.168.1.178'], true)) {

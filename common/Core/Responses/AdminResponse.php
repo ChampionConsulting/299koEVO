@@ -83,6 +83,7 @@ class AdminResponse extends Response {
         }
         $this->layout->set('CONTENT', Core::getInstance()->callHook('adminContent', $content));
         $this->layout->set('PAGE_TITLE' , $this->title ?? false);
+        $this->layout->set('CSRF_TOKEN', \Core\Security\Csrf::token());
         return $this->layout->output();
     }
 
