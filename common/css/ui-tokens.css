@@ -49,7 +49,8 @@
     --evo-shadow-md: 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
-body.theme-dark {
+:root.theme-dark,
+:root[data-theme="dark"] {
     --evo-bg: #0e1116;
     --evo-surface: #18232c;
     --evo-surface-alt: #1d232d;
@@ -91,7 +92,7 @@ body.theme-dark {
 }
 
 @media (prefers-color-scheme: dark) {
-    body:not(.theme-light) {
+    :root:not(.theme-light):not([data-theme="light"]) {
         --evo-bg: #0e1116;
         --evo-surface: #18232c;
         --evo-surface-alt: #1d232d;

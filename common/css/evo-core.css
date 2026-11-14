@@ -162,8 +162,9 @@
         --evo-sidebar-width: 320px;
     }
 
-    /* Thème sombre manuel (body.theme-dark) */
-    body.theme-dark {
+    /* Thème sombre manuel */
+    :root.theme-dark,
+    :root[data-theme="dark"] {
         --evo-bg: #0b1118;
         --evo-surface: #131c26;
         --evo-surface-alt: #1a2533;
@@ -207,7 +208,7 @@
 
     /* Thème sombre automatique selon préférences système */
     @media (prefers-color-scheme: dark) {
-        body:not(.theme-light) {
+        :root:not(.theme-light):not([data-theme="light"]) {
             --evo-bg: #0b1118;
             --evo-surface: #131c26;
             --evo-surface-alt: #1a2533;
@@ -950,6 +951,37 @@
         color: var(--evo-text);
     }
 
+    .button.success,
+    button.success,
+    a.button.success {
+        background: var(--evo-accent);
+        color: var(--evo-accent-text);
+        border: 1px solid transparent;
+    }
+
+    .button.success:hover,
+    button.success:hover,
+    a.button.success:hover {
+        background: var(--evo-accent-hover);
+        color: var(--evo-accent-text);
+    }
+
+    .button.alert,
+    button.alert,
+    a.button.alert {
+        background: var(--evo-surface-alt);
+        color: var(--evo-text);
+        border: 1px solid var(--evo-border);
+    }
+
+    .button.alert:hover,
+    button.alert:hover,
+    a.button.alert:hover {
+        background: var(--evo-danger);
+        color: #ffffff;
+        border-color: var(--evo-danger);
+    }
+
     .button.danger,
     button.danger {
         background: var(--evo-danger);
@@ -1008,6 +1040,67 @@
         font-size: 0.92rem;
         margin-bottom: 0.35rem;
         color: var(--evo-text);
+    }
+
+    /* Formulaires d'authentification (login, register, profil) */
+    .user-auth-form {
+        max-width: 520px;
+        margin: 2.5rem auto;
+        padding: 2.5rem;
+        background: var(--evo-card-bg);
+        color: var(--evo-text);
+        border-radius: var(--evo-radius-md);
+        box-shadow: var(--evo-shadow-md);
+        border: 1px solid var(--evo-border);
+    }
+
+    .user-auth-form .field {
+        margin-bottom: 1.25rem;
+    }
+
+    .user-auth-form .field.checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .user-auth-form .field.checkbox label {
+        margin-bottom: 0;
+        font-weight: normal;
+        cursor: pointer;
+    }
+
+    .user-auth-form .actions {
+        margin-top: 1.75rem;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .user-auth-form .links {
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--evo-border);
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    .user-auth-form .links a,
+    .user-auth-form .links a:visited {
+        color: var(--evo-accent);
+        text-decoration: none;
+    }
+
+    .user-auth-form .links a:hover {
+        color: var(--evo-accent-hover);
+        text-decoration: underline;
+    }
+
+    .user-auth-form .auth-sep {
+        margin: 0 8px;
+        color: var(--evo-text-muted);
+        opacity: 0.6;
     }
 
     /* --------------------------------------------------------------------------
