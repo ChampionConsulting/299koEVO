@@ -2099,17 +2099,17 @@ tr td input.small {
     gap: 22px;
 }
 .adm-dash-hero {
-    margin: 0 !important;
-    padding: 26px 28px !important;
-    background: linear-gradient(135deg, var(--evo-card-bg) 0%, var(--evo-surface) 100%) !important;
+    margin: 0;
+    padding: 26px 28px;
+    background: linear-gradient(135deg, var(--evo-card-bg) 0%, var(--evo-surface) 100%);
     border: 1px solid var(--evo-border);
-    border-radius: 16px !important;
+    border-radius: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 20px;
     flex-wrap: wrap;
-    box-shadow: var(--evo-shadow-sm) !important;
+    box-shadow: var(--evo-shadow-sm);
 }
 .adm-dash-kicker {
     display: inline-block;
