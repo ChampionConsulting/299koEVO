@@ -1646,15 +1646,15 @@ section > footer, .card > footer {
 }
 
 .adm-logout-link {
-    color: #b91c1c !important;
+    color: #b91c1c;
 }
 
 .adm-logout-link i {
-    color: #b91c1c !important;
+    color: #b91c1c;
 }
 
 .adm-logout-link:hover {
-    background: #fef2f2 !important;
+    background: #fef2f2;
 }
 
 .adm-drop-version {
@@ -1897,7 +1897,7 @@ tr td input.small {
 @media only screen and (max-width: 960px){
 
     body, input[type=text], input[type=email], input[type=password], input[type=url], input[type=number], input[type=date], textarea, input[type=submit], input[type=button], button, .button, .tooltip>span{
-        font-size: 12px !important;
+        font-size: 12px;
     }
 
     input[type=submit], input[type=button], button, .button{
@@ -1909,7 +1909,7 @@ tr td input.small {
     }
     
     button[type=submit].floating, [type=submit].button.floating {
-        font-size: 20px !important;
+        font-size: 20px;
         width: 48px;
         height: 48px;
     }
@@ -1934,14 +1934,14 @@ tr td input.small {
         width: 38px;
         flex-shrink: 0;
         clear: none;
-        font-size: 1.05rem !important;
+        font-size: 1.05rem;
     }
 
     .adm-avatar-btn {
         display: inline-flex;
         width: auto;
         clear: none;
-        font-size: 0.85rem !important;
+        font-size: 0.85rem;
     }
 
     .adm-nav-collapse {
@@ -1970,7 +1970,7 @@ tr td input.small {
         align-items: center;
         justify-content: flex-start;
         text-align: left;
-        font-size: 0.9rem !important;
+        font-size: 0.9rem;
         padding: 10px 14px;
         gap: 10px;
     }
@@ -2214,6 +2214,432 @@ tr td input.small {
     font-size: 0.78rem;
     color: var(--evo-text-muted);
 }
+.adm-btn-site-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    background: var(--evo-surface);
+    color: var(--evo-text);
+    border: 1px solid var(--evo-border-strong);
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.adm-btn-site-preview:hover {
+    background: var(--evo-accent);
+    color: var(--evo-accent-text);
+    border-color: var(--evo-accent);
+    box-shadow: var(--evo-shadow-sm);
+}
+
+/* Grille 2 Colonnes du Tableau de bord */
+.adm-dash-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 22px;
+    align-items: start;
+}
+@media (max-width: 1080px) {
+    .adm-dash-columns {
+        grid-template-columns: 1fr;
+    }
+}
+.adm-dash-main-col,
+.adm-dash-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+/* Panneaux de cartes */
+.adm-card-panel {
+    background: var(--evo-card-bg);
+    border: 1px solid var(--evo-border);
+    border-radius: 14px;
+    box-shadow: var(--evo-shadow-sm);
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+.adm-card-panel:hover {
+    border-color: var(--evo-border-strong);
+}
+.adm-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: var(--evo-surface);
+    border-bottom: 1px solid var(--evo-border);
+}
+.adm-card-header-title {
+    margin: 0;
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: var(--evo-text);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.adm-card-header-title i {
+    color: var(--evo-accent);
+    font-size: 0.95rem;
+}
+.adm-card-header-link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--evo-accent);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.15s ease;
+}
+.adm-card-header-link:hover {
+    color: var(--evo-accent-hover);
+    text-decoration: underline;
+}
+.adm-card-body {
+    padding: 18px 20px;
+}
+.adm-side-actions {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Tableaux épurés du Dashboard */
+.adm-table-simple {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+.adm-table-simple th {
+    padding: 10px 12px;
+    text-align: left;
+    color: var(--evo-text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--evo-border);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.adm-table-simple td {
+    padding: 12px;
+    border-bottom: 1px solid var(--evo-border);
+    color: var(--evo-text);
+    vertical-align: middle;
+}
+.adm-table-simple tr:last-child td {
+    border-bottom: none;
+}
+.adm-page-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.adm-page-name-cell i {
+    color: var(--evo-accent);
+}
+.adm-page-title {
+    font-weight: 600;
+    color: var(--evo-text);
+    text-decoration: none;
+}
+.adm-page-title:hover {
+    color: var(--evo-accent);
+}
+.adm-table-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--evo-surface);
+    border: 1px solid var(--evo-border);
+    color: var(--evo-text-muted);
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.adm-table-btn:hover {
+    background: var(--evo-accent);
+    color: var(--evo-accent-text);
+    border-color: var(--evo-accent);
+}
+
+/* Badges */
+.adm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.adm-badge-green  { background: var(--evo-success-bg); color: var(--evo-success); border: 1px solid var(--evo-success-border); }
+.adm-badge-muted  { background: var(--evo-surface-alt); color: var(--evo-text-muted); border: 1px solid var(--evo-border); }
+.adm-badge-gold   { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+.adm-badge-indigo { background: var(--evo-info-bg); color: var(--evo-info); border: 1px solid var(--evo-info-border); }
+
+/* Liste des messages de contact */
+.adm-msg-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.adm-msg-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--evo-surface);
+    border: 1px solid var(--evo-border);
+    transition: border-color 0.15s ease;
+}
+.adm-msg-item:hover {
+    border-color: var(--evo-accent);
+}
+.adm-msg-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--evo-accent-soft);
+    color: var(--evo-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.95rem;
+}
+.adm-msg-details {
+    flex: 1;
+    min-width: 0;
+}
+.adm-msg-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+.adm-msg-sender {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--evo-text);
+}
+.adm-msg-date {
+    font-size: 0.76rem;
+    color: var(--evo-text-muted);
+}
+.adm-msg-subject {
+    font-size: 0.84rem;
+    color: var(--evo-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Grille des Utilisateurs Récents */
+.adm-users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+.adm-user-mini-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--evo-surface);
+    border: 1px solid var(--evo-border);
+    transition: border-color 0.15s ease;
+}
+.adm-user-mini-card:hover {
+    border-color: var(--evo-accent);
+}
+.adm-user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--evo-info-bg);
+    color: var(--evo-info);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.adm-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+}
+.adm-user-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--evo-text);
+}
+.adm-user-email {
+    font-size: 0.78rem;
+    color: var(--evo-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Widget Météo Admin */
+.adm-weather-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.95) 100%);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+.adm-weather-card .adm-card-header {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+.adm-weather-card .adm-card-header-title {
+    color: #ffffff;
+}
+.adm-weather-card .adm-card-header-title i {
+    color: #38bdf8;
+}
+.adm-weather-card .adm-card-header-link {
+    color: #38bdf8;
+}
+.adm-weather-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.adm-weather-main {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+.adm-weather-temp {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+}
+.adm-weather-city {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+}
+.adm-weather-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+.adm-weather-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Santé & Sécurité Système */
+.adm-health-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.adm-health-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--evo-surface);
+    border: 1px solid var(--evo-border);
+    font-size: 0.85rem;
+}
+.adm-health-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--evo-text);
+    font-weight: 600;
+}
+.adm-health-label i {
+    color: var(--evo-accent);
+}
+.adm-health-val {
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+/* Actions Rapides Latérales */
+.adm-action-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--evo-text);
+    transition: all 0.15s ease;
+}
+.adm-action-row:hover {
+    background: var(--evo-surface);
+    color: var(--evo-accent);
+    transform: translateX(3px);
+}
+.adm-action-row i {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--evo-surface);
+    border: 1px solid var(--evo-border);
+    color: var(--evo-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+.adm-action-row:hover i {
+    background: var(--evo-accent);
+    color: var(--evo-accent-text);
+    border-color: var(--evo-accent);
+}
+.adm-action-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.adm-action-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: inherit;
+}
+.adm-action-sub {
+    font-size: 0.76rem;
+    color: var(--evo-text-muted);
+}
+.adm-empty-state {
+    padding: 16px;
+    text-align: center;
+    color: var(--evo-text-muted);
+    font-size: 0.86rem;
+    font-style: italic;
+}
+
 .adm-dash-widgets {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -2697,7 +3123,7 @@ tr td input.small {
     display: block;
 }
 .is-hidden {
-    display: none !important;
+    display: none;
 }
 @media (max-width: 900px) {
     .menus-grid { grid-template-columns: 1fr; }
