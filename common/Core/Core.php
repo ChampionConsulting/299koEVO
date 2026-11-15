@@ -164,12 +164,13 @@ class Core
         }
 
         // Réglage de l'error reporting suivant le paramètre debug
-        if ($this->config && $this->config['debug']) {
+        if (!empty($this->config['debug'])) {
             ini_set('display_errors', 1);
             error_reporting(E_ALL);
             $this->startTime = microtime(true);
-        } else
+        } else {
             error_reporting(E_ERROR | E_PARSE);
+        }
         // Liste des thèmes
         $temp = Util::scanDir(THEMES);
         foreach ($temp['dir'] as $k => $v) {
@@ -1243,9 +1244,14 @@ class Core
                     // Ne pas appeler output() ici car processResponseContent() l'appelle déjà
                     $optimizedContent = $this->processResponseContent($response);
 
-                    // Pour les ApiResponse, ne pas ajouter de logs après le JSON
-                    if ($response instanceof \Core\Responses\ApiResponse) {
+                    // Pour les ApiResponse et les StringResponse brutes / non-HTML (JS, CSS, manifest, fragment), ne pas cacher sans headers ni injecter de logs HTML
+                    if ($response instanceof \Core\Responses\ApiResponse
+                        || ($response instanceof \Core\Responses\StringResponse && $response->isRawOrNonHtml())
+                    ) {
                         echo $optimizedContent;
+                        if (ob_get_level() > 0) {
+                            @ob_end_flush();
+                        }
                         die();
                     }
 
@@ -1274,8 +1280,10 @@ class Core
     protected function processResponseContent(Response $response): string
     {
         $content = $response->output();
-        // Ne pas minifier les réponses API (JSON)
-        if ($response instanceof \Core\Responses\ApiResponse) {
+        // Ne pas minifier les réponses API (JSON) ni les réponses brutes / non-HTML
+        if ($response instanceof \Core\Responses\ApiResponse
+            || ($response instanceof \Core\Responses\StringResponse && $response->isRawOrNonHtml())
+        ) {
             return $content;
         }
         $minifyer = new \Content\Minifyer();
@@ -1495,11 +1503,11 @@ class Core
 
     public function logGenerationTime()
     {
-        if ($this->config && !$this->config['debug']) {
+        if (empty($this->config['debug'])) {
             return;
         }
         $endTime = microtime(true);
-        echo '<script>console.log("Generation time: ' . round($endTime - $this->startTime, 3) . 's");';
+        echo '<script>console.log("Generation time: ' . round($endTime - ($this->startTime ?? $endTime), 3) . 's");';
         echo 'console.log("Queries: ' . $this->queryCount . '");</script>';
     }
 }

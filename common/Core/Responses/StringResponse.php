@@ -24,17 +24,98 @@ class StringResponse extends Response {
      */
     protected Theme $theme;
 
+    /**
+     * Optional raw string content
+     */
+    protected string $rawContent = '';
+
+    private bool $hasRawContent = false;
+    private ?string $contentType = null;
+    private ?int $statusCode = null;
+    private array $headers = [];
+    private bool $headersEmitted = false;
+
     public function __construct() {
         parent::__construct();
         $this->theme = new Theme(Core::getInstance()->getConfigVal('theme'));
     }
 
     /**
-     * Return the response
-     * @return string Content of all template
+     * Set raw response content for MVC non-template endpoints.
      */
-    public function output():string
+    public function setContent(string $content): self
     {
+        $this->rawContent = $content;
+        $this->hasRawContent = true;
+        return $this;
+    }
+
+    public function hasRawContent(): bool
+    {
+        return $this->hasRawContent;
+    }
+
+    public function setContentType(string $mime): self
+    {
+        $this->contentType = $mime;
+        return $this;
+    }
+
+    public function getContentType(): ?string
+    {
+        return $this->contentType;
+    }
+
+    public function setStatusCode(int $code): self
+    {
+        $this->statusCode = $code;
+        return $this;
+    }
+
+    public function getStatusCode(): int
+    {
+        return $this->statusCode ?? 200;
+    }
+
+    public function addHeader(string $name, string $value): self
+    {
+        $this->headers[$name] = $value;
+        return $this;
+    }
+
+    public function isRawOrNonHtml(): bool
+    {
+        return $this->hasRawContent
+            || ($this->contentType !== null && stripos($this->contentType, 'text/html') === false);
+    }
+
+    public function sendHeaders(): void
+    {
+        if ($this->headersEmitted || headers_sent()) {
+            return;
+        }
+        $this->headersEmitted = true;
+        if ($this->statusCode !== null) {
+            http_response_code($this->statusCode);
+        }
+        if ($this->contentType !== null) {
+            header('Content-Type: ' . $this->contentType);
+        }
+        foreach ($this->headers as $name => $value) {
+            header($name . ': ' . $value);
+        }
+    }
+
+    /**
+     * Return the response
+     * @return string Content of raw string or all templates
+     */
+    public function output(): string
+    {
+        $this->sendHeaders();
+        if ($this->hasRawContent) {
+            return $this->rawContent;
+        }
         $content = '';
         foreach ($this->templates as $tpl) {
             $content .= $tpl->output();
