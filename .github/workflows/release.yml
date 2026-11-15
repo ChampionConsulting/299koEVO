@@ -40,11 +40,11 @@ jobs:
       - name: Update VERSION and core_patch.json
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          sed -i -E "s/const VERSION = '[^']+';/const VERSION = '${VERSION}';/" common/config.php
+          sed -i -E "s/define\('VERSION', '[^']+'\);/define('VERSION', '${VERSION}');/" common/config.php
           mkdir -p data/core/settings
           echo "{\"version\":\"${VERSION}\",\"commit\":\"${GITHUB_SHA}\",\"updated_at\":$(date +%s)}" > data/core/settings/core_patch.json
           echo "Updated common/config.php with VERSION = ${VERSION}"
-          grep "const VERSION" common/config.php
+          grep "VERSION" common/config.php
 
       - name: Package Distribution Zip
         run: |
@@ -53,6 +53,7 @@ jobs:
           zip -r "${ZIP_NAME}" . \
             -x "*.git*" \
             -x "*.github*" \
+            -x "tests/*" \
             -x "data/database.sqlite*" \
             -x "data/plugin/*/logs/*" \
             -x "data/cache/*" \

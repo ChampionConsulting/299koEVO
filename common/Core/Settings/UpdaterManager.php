@@ -185,8 +185,8 @@ class UpdaterManager
             return (string) $this->lastVersion;
         }
         
-        // 2. Correctif de sécurité continu (même version SemVer, nouveau commit sur main)
-        if ($comparison === 0 && !empty($this->latestCommit)) {
+        // 2. Correctif de sécurité continu (version égale ou en avance, nouveau commit sur main)
+        if ($comparison <= 0 && !empty($this->latestCommit)) {
             $localCommit = $this->getLocalCommit();
             if ($localCommit === null || strtolower(substr($localCommit, 0, 7)) !== strtolower(substr($this->latestCommit, 0, 7))) {
                 return (string) $this->latestCommit;
