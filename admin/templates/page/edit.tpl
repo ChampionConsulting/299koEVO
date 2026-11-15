@@ -32,6 +32,12 @@
             <li data-tab="seo">
                 <i class="fa-solid fa-magnifying-glass"></i> {{Lang.page.seo-heading}}
             </li>
+            <li data-tab="blocks">
+                <i class="fa-solid fa-cubes"></i> Blocs &amp; Champs
+            </li>
+            <li data-tab="revisions">
+                <i class="fa-solid fa-clock-rotate-left"></i> Révisions &amp; Langue
+            </li>
             <li data-tab="access">
                 <i class="fa-solid fa-flask"></i> Conditions d'accès <span class="adm-badge-exp">Expérimental</span>
             </li>
@@ -72,11 +78,13 @@
                 <section id="section-settings" class="content">
                     <header><h3>{{Lang.core-settings}}</h3></header>
                     <p>
-                        <label for="isHidden">Statut de publication</label><br>
-                        <select name="isHidden" id="isHidden">
-                            <option value="0" {% if not pageItem.getIsHidden() %}selected{% endif %}>Publiée (visible sur le site)</option>
-                            <option value="1" {% if pageItem.getIsHidden() %}selected{% endif %}>Brouillon (masquée et retirée des menus)</option>
+                        <label for="status">Statut éditorial (Workflow)</label><br>
+                        <select name="status" id="status">
+                            {% for stKey, stLabel in workflowStatuses %}
+                                <option value="{{stKey}}" {% if currentStatus == stKey %}selected{% endif %}>{{stLabel}}</option>
+                            {% endfor %}
                         </select>
+                        <input type="hidden" name="isHidden" id="isHiddenMirror" value="{% if currentStatus == 'published' %}0{% else %}1{% endif %}" />
                     </p>
                     <p id="row-homepage">
                         <input {% if pageItem.getIsHomepage() %}checked{% endif %} type="checkbox" name="isHomepage" id="isHomepage" />
@@ -134,6 +142,80 @@
                         <label for="metaDescriptionTag">{{Lang.page.meta-description}}</label><br>
                         <input type="text" name="metaDescriptionTag" id="metaDescriptionTag" value="{{pageItem.getMetaDescriptionTag()}}" />
                     </p>
+                </section>
+            </li>
+
+            <!-- Tab 3b: Composition de blocs & Champs personnalisés -->
+            <li class="tab">
+                <section id="section-blocks" class="content">
+                    <header><h3>Compositeur de blocs</h3></header>
+                    <p><small>Les blocs structurés s'ajoutent après le contenu principal de la page sans casser l'éditeur historique.</small></p>
+                    <input type="hidden" name="blocks_json" id="blocks_json" value="{{blocksJson|escape}}" />
+                    <div style="display:flex;gap:.5rem;margin-bottom:.75rem;align-items:center;">
+                        <select id="evo-add-block-type"></select>
+                        <button type="button" class="button small primary" id="evo-add-block-btn">+ Ajouter un bloc</button>
+                    </div>
+                    <div id="evo-blocks-list" class="evo-blocks-editor"></div>
+                </section>
+                {% if hasCustomFields %}
+                <section id="section-custom-fields" class="content">
+                    <header><h3>Champs personnalisés de la page</h3></header>
+                    {{customFieldsHtml|raw}}
+                </section>
+                {% endif %}
+            </li>
+
+            <!-- Tab 3c: Révisions & Multilingue -->
+            <li class="tab">
+                <section id="section-multilingual" class="content">
+                    <header><h3>Langue &amp; Groupe de traduction</h3></header>
+                    <p>
+                        <label for="page_locale">Langue de la page</label><br>
+                        <select name="locale" id="page_locale">
+                            <option value="">-- Par défaut --</option>
+                            {% for loc in enabledLocales %}
+                                <option value="{{loc}}" {% if pageItem.getLocale() == loc %}selected{% endif %}>{{loc}}</option>
+                            {% endfor %}
+                        </select>
+                    </p>
+                    <p>
+                        <label for="translation_group">Identifiant du groupe de traduction</label><br>
+                        <input type="text" name="translation_group" id="translation_group" value="{{pageItem.getTranslationGroup()}}" placeholder="Généré automatiquement si vide" />
+                    </p>
+                </section>
+                <section id="section-revisions" class="content">
+                    <header><h3>Historique des révisions</h3></header>
+                    {% if pageRevisions %}
+                        <table class="table">
+                            <thead>
+                                <tr><th>Version</th><th>Date</th><th>Auteur</th><th>Statut</th><th>Résumé</th><th>Action</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for rev in pageRevisions %}
+                                    <tr>
+                                        <td>v{{rev.version}}</td>
+                                        <td>{{rev.created_at}}</td>
+                                        <td>{{rev.author_name}}</td>
+                                        <td>{{rev.status}}</td>
+                                        <td>{{rev.summary}}</td>
+                                        <td>
+                                            <button type="submit"
+                                                formaction="{ ROUTER.generate("page-admin-restore-revision") }"
+                                                name="revision_id"
+                                                value="{{rev.id}}"
+                                                class="button small warning"
+                                                onclick="document.getElementById('evo-restore-page-id').disabled=false;return confirm('Restaurer la révision v{{rev.version}} ?');">
+                                                Restaurer
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <input type="hidden" name="page_id" id="evo-restore-page-id" value="{{pageItem.getId()}}" disabled />
+                    {% else %}
+                        <p>Aucune révision enregistrée pour cette page.</p>
+                    {% endif %}
                 </section>
             </li>
 
@@ -410,5 +492,119 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     fetchMetadata();
+})();
+
+(function () {
+    const statusSel = document.getElementById('status');
+    const hiddenMirror = document.getElementById('isHiddenMirror');
+    if (statusSel && hiddenMirror) {
+        statusSel.addEventListener('change', function () {
+            hiddenMirror.value = statusSel.value === 'published' ? '0' : '1';
+        });
+    }
+
+    const blocksInput = document.getElementById('blocks_json');
+    const blocksList = document.getElementById('evo-blocks-list');
+    const typeSelect = document.getElementById('evo-add-block-type');
+    const addBtn = document.getElementById('evo-add-block-btn');
+    if (!blocksInput || !blocksList || !typeSelect || !addBtn) return;
+
+    let blockDefs = {};
+    try {
+        blockDefs = JSON.parse('{{blockDefsJson|raw}}' || '{}');
+    } catch (e) {
+        blockDefs = {};
+    }
+
+    let blocks = [];
+    try {
+        blocks = JSON.parse(blocksInput.value || '[]');
+        if (!Array.isArray(blocks)) blocks = [];
+    } catch (e) {
+        blocks = [];
+    }
+
+    Object.keys(blockDefs).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = blockDefs[t].label || t;
+        typeSelect.appendChild(opt);
+    });
+
+    function sync() {
+        blocks = blocks.map((b, i) => Object.assign({}, b, { order: i }));
+        blocksInput.value = JSON.stringify(blocks);
+    }
+
+    function renderBlocks() {
+        blocksList.innerHTML = '';
+        if (blocks.length === 0) {
+            blocksList.innerHTML = '<p class="evo-blocks-empty">Aucun bloc ajouté pour l\'instant.</p>';
+            sync();
+            return;
+        }
+        blocks.forEach((blk, idx) => {
+            const card = document.createElement('div');
+            card.style.cssText = 'border:1px solid #d1d5db;border-radius:6px;padding:.75rem;margin-bottom:.75rem;background:#fff;';
+            const head = document.createElement('div');
+            head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;';
+            const def = blockDefs[blk.type] || { label: blk.type };
+            const title = document.createElement('strong');
+            title.textContent = '#' + (idx + 1) + ' — ' + def.label + ' (' + blk.type + ')';
+            const btns = document.createElement('div');
+            btns.style.cssText = 'display:flex;gap:.25rem;';
+
+            const mkBtn = (txt, fn) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'button small secondary';
+                b.textContent = txt;
+                b.onclick = fn;
+                return b;
+            };
+            if (idx > 0) btns.appendChild(mkBtn('↑', () => { [blocks[idx-1], blocks[idx]] = [blocks[idx], blocks[idx-1]]; sync(); renderBlocks(); }));
+            if (idx < blocks.length - 1) btns.appendChild(mkBtn('↓', () => { [blocks[idx+1], blocks[idx]] = [blocks[idx], blocks[idx+1]]; sync(); renderBlocks(); }));
+            btns.appendChild(mkBtn('Supprimer', () => { blocks.splice(idx, 1); sync(); renderBlocks(); }));
+
+            head.appendChild(title);
+            head.appendChild(btns);
+            card.appendChild(head);
+
+            const area = document.createElement('textarea');
+            area.rows = 4;
+            area.style.width = '100%';
+            area.style.fontFamily = 'monospace';
+            area.value = JSON.stringify(blk.data || {}, null, 2);
+            area.onchange = () => {
+                try {
+                    blk.data = JSON.parse(area.value);
+                    area.style.borderColor = '#d1d5db';
+                    sync();
+                } catch (e) {
+                    area.style.borderColor = '#dc2626';
+                }
+            };
+            card.appendChild(area);
+            blocksList.appendChild(card);
+        });
+        sync();
+    }
+
+    addBtn.onclick = () => {
+        const t = typeSelect.value;
+        if (!t) return;
+        const def = blockDefs[t] || {};
+        blocks.push({
+            id: 'blk_' + Math.random().toString(36).slice(2, 10),
+            type: t,
+            order: blocks.length,
+            data: JSON.parse(JSON.stringify(def.defaultData || {})),
+            settings: {}
+        });
+        sync();
+        renderBlocks();
+    };
+
+    renderBlocks();
 })();
 </script>

@@ -294,6 +294,12 @@ class AuthService
     private ?User $currentUserCache = null;
     private bool $currentUserChecked = false;
 
+    public function resetCurrentUserCache(): void
+    {
+        $this->currentUserCache = null;
+        $this->currentUserChecked = false;
+    }
+
     /**
      * Retourne l'utilisateur courant ou null.
      */

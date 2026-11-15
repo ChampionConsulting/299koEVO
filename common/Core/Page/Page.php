@@ -53,6 +53,38 @@ class Page
 
         $success = $obj->save();
         if ($success) {
+            if ($obj->targetIs() === 'page' && $obj->getId() !== null) {
+                if (class_exists('\Core\Editorial\RevisionManager')) {
+                    \Core\Editorial\RevisionManager::getInstance()->recordRevision(
+                        'page',
+                        (string) $obj->getId(),
+                        [
+                            'name' => $obj->getName(),
+                            'mainTitle' => $obj->getMainTitle(),
+                            'content' => $obj->getContent(),
+                            'blocks' => $obj->getBlocks(),
+                            'metaTitleTag' => $obj->getMetaTitleTag(),
+                            'metaDescriptionTag' => $obj->getMetaDescriptionTag(),
+                            'locale' => $obj->getLocale(),
+                        ],
+                        class_exists('\Core\Auth\UsersManager') ? \Core\Auth\UsersManager::getCurrentUser() : null,
+                        $obj->getStatus(),
+                        ''
+                    );
+                }
+                if (class_exists('\Core\Translation\TranslationManager') && $obj->getLocale() !== '') {
+                    $group = \Core\Translation\TranslationManager::getInstance()->registerTranslation(
+                        'page',
+                        (string) $obj->getId(),
+                        $obj->getLocale(),
+                        $obj->getTranslationGroup() !== '' ? $obj->getTranslationGroup() : null
+                    );
+                    if ($obj->getTranslationGroup() === '' && $group !== '') {
+                        $obj->setTranslationGroup($group);
+                        $obj->save();
+                    }
+                }
+            }
             $this->items = $this->loadPages();
         }
         return $success;

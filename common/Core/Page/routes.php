@@ -39,3 +39,4 @@ $router->map('POST', '/admin/page/toggle-global-icons', 'Core\Page\Controllers\P
 $router->map('GET', '/admin/page/list-plugin-routes-ajax/[*:plugin]', 'Core\Page\Controllers\PageAdminController#listPluginRoutesAjax', 'page-admin-list-plugin-routes-ajax');
 $router->map('GET', '/admin/page/list-providers-ajax', 'Core\Page\Controllers\PageAdminController#listProvidersAjax', 'page-admin-list-providers-ajax');
 $router->map('POST', '/admin/page/explain-policy-ajax', 'Core\Page\Controllers\PageAdminController#explainPolicyAjax', 'page-admin-explain-policy-ajax');
+$router->map('POST', '/admin/page/restore-revision', 'Core\Page\Controllers\PageAdminController#restoreRevision', 'page-admin-restore-revision');

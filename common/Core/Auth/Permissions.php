@@ -32,6 +32,20 @@ class Permissions
                 'label' => 'permissions.category.content',
                 'items' => [
                     'pages.manage' => 'permissions.pages.manage',
+                    'pages.edit' => 'permissions.pages.edit',
+                    'pages.publish' => 'permissions.pages.publish',
+                    'content.view' => 'permissions.content.view',
+                    'content.create' => 'permissions.content.create',
+                    'content.edit' => 'permissions.content.edit',
+                    'content.delete' => 'permissions.content.delete',
+                    'content.publish' => 'permissions.content.publish',
+                    'content.revisions' => 'permissions.content.revisions',
+                ],
+            ],
+            'api' => [
+                'label' => 'permissions.category.api',
+                'items' => [
+                    'api.access' => 'permissions.api.access',
                 ],
             ],
             'media' => [

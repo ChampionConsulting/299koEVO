@@ -62,6 +62,23 @@ function pageEndFrontHead() {
         if (!empty($ogImageData['url'])) {
             echo '<meta property="og:image" content="' . htmlspecialchars($ogImageData['url']) . '" />';
         }
+        if ($pageItem instanceof PageItem && class_exists('\Core\Translation\TranslationManager')) {
+            $tm = \Core\Translation\TranslationManager::getInstance();
+            $pageService = new Page();
+            $siteUrl = rtrim((string) $core->getConfigVal('siteUrl'), '/');
+            $hreflangHtml = $tm->renderHreflangTags('page', (string) $pageItem->getId(), static function (string $loc, string $targetId) use ($pageService, $tm, $siteUrl): string {
+                $targetPage = $pageService->create($targetId);
+                if (!$targetPage instanceof PageItem) {
+                    return '';
+                }
+                $relPath = str_replace($siteUrl, '', $pageService->makeUrl($targetPage));
+                $locPath = $tm->buildLocalizedUrl($relPath ?: '/', $loc);
+                return $siteUrl . $locPath;
+            });
+            if ($hreflangHtml !== '') {
+                echo "\n" . $hreflangHtml;
+            }
+        }
     }
 }
 

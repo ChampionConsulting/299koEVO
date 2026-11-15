@@ -44,10 +44,15 @@ class PageItem extends \Core\Storage\JsonActiveRecord implements ResourceInterfa
         'showIcon' => 'show_icon',
         'icon' => 'icon',
         'navContext' => 'nav_context',
-        'conditions' => 'conditions'
+        'conditions' => 'conditions',
+        'status' => 'status',
+        'blocks' => 'blocks',
+        'locale' => 'locale',
+        'translationGroup' => 'translation_group',
     ];
     protected static array $casts = [
-        'conditions' => 'array'
+        'conditions' => 'array',
+        'blocks' => 'array',
     ];
 
     protected static function getSchema(): array
@@ -75,6 +80,10 @@ class PageItem extends \Core\Storage\JsonActiveRecord implements ResourceInterfa
             'icon' => 'string',
             'nav_context' => 'string',
             'conditions' => 'text',
+            'status' => 'string',
+            'blocks' => 'text',
+            'locale' => 'string',
+            'translation_group' => 'string',
         ];
     }
 
@@ -107,7 +116,7 @@ class PageItem extends \Core\Storage\JsonActiveRecord implements ResourceInterfa
             case 'PP': return in_array('footer', $contexts);
             case 'AUTO': return in_array('auto', $contexts);
             case 'PUB':
-                if ($this->getIsHidden()) return false;
+                if (!$this->isPublished()) return false;
                 // Public if no auth or role condition
                 foreach ($this->getConditions() as $c) {
                     $type = $c['type'] ?? '';
@@ -115,19 +124,19 @@ class PageItem extends \Core\Storage\JsonActiveRecord implements ResourceInterfa
                 }
                 return true;
             case 'MEM':
-                if ($this->getIsHidden()) return false;
+                if (!$this->isPublished()) return false;
                 foreach ($this->getConditions() as $c) {
                     if (($c['type'] ?? '') === 'auth' && ($c['value'] ?? false) === true) return true;
                 }
                 return false;
             case 'ADM':
-                if ($this->getIsHidden()) return false;
+                if (!$this->isPublished()) return false;
                 foreach ($this->getConditions() as $c) {
                     if (($c['type'] ?? '') === 'role' && ($c['value'] ?? '') === 'admin') return true;
                 }
                 return false;
             case 'V':
-                return !$this->getIsHidden();
+                return $this->isPublished();
         }
         return false;
     }
@@ -375,15 +384,94 @@ class PageItem extends \Core\Storage\JsonActiveRecord implements ResourceInterfa
     }
 
     /**
-     * Retourne le contenu HTML décodé et interprété via ContentParser (shortcodes).
+     * Retourne le contenu HTML décodé, enrichi des shortcodes (ContentParser)
+     * et du rendu structuré des blocs éditoriaux éventuels.
      */
     public function getParsedContent(): string
     {
         $decoded = htmlspecialchars_decode((string) $this->getContent());
         if (class_exists('\Content\ContentParser')) {
-            return (new \Content\ContentParser($decoded))->getParsedContent();
+            $decoded = (new \Content\ContentParser($decoded))->getParsedContent();
+        }
+        if ($this->hasBlocks() && class_exists('\Core\Blocks\BlockManager')) {
+            $blocksHtml = $this->getRenderedBlocks();
+            if ($blocksHtml !== '') {
+                $decoded = trim($decoded) !== '' ? ($decoded . "\n" . $blocksHtml) : $blocksHtml;
+            }
         }
         return $decoded;
+    }
+
+    public function getStatus(): string
+    {
+        $status = trim((string) ($this->attributes['status'] ?? ''));
+        if ($status !== '') {
+            return $status;
+        }
+        return ((int) $this->getIsHidden() === 1) ? 'draft' : 'published';
+    }
+
+    public function setStatus(string $status): void
+    {
+        $normalized = strtolower(trim($status));
+        $this->attributes['status'] = $normalized !== '' ? $normalized : 'draft';
+        $this->attributes['isHidden'] = ($this->attributes['status'] === 'published') ? 0 : 1;
+    }
+
+    public function isPublished(): bool
+    {
+        if ((int) $this->getIsHidden() === 1) {
+            return false;
+        }
+        return $this->getStatus() === 'published';
+    }
+
+    public function getBlocks(): array
+    {
+        $blocks = $this->attributes['blocks'] ?? [];
+        if (is_string($blocks)) {
+            $decoded = json_decode($blocks, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+        return is_array($blocks) ? $blocks : [];
+    }
+
+    public function setBlocks(array $blocks): void
+    {
+        $this->attributes['blocks'] = array_values($blocks);
+    }
+
+    public function hasBlocks(): bool
+    {
+        return !empty($this->getBlocks());
+    }
+
+    public function getRenderedBlocks(): string
+    {
+        if (!$this->hasBlocks() || !class_exists('\Core\Blocks\BlockManager')) {
+            return '';
+        }
+        return \Core\Blocks\BlockManager::getInstance()->renderBlocks($this->getBlocks(), ['pageItem' => $this]);
+    }
+
+    public function getLocale(): string
+    {
+        return trim((string) ($this->attributes['locale'] ?? ''));
+    }
+
+    public function setLocale(string $locale): void
+    {
+        $this->attributes['locale'] = strtolower(trim($locale));
+    }
+
+    public function getTranslationGroup(): string
+    {
+        return trim((string) ($this->attributes['translationGroup'] ?? $this->attributes['translation_group'] ?? ''));
+    }
+
+    public function setTranslationGroup(string $group): void
+    {
+        $this->attributes['translationGroup'] = trim($group);
     }
 
     public function getIsHidden()

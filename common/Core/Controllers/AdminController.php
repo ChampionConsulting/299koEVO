@@ -78,7 +78,11 @@ class AdminController extends Controller {
     {
         $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
         $ctx = new \Core\Navigation\ConditionContext($this->user);
-        $resource = new \Core\Navigation\GenericResource('system:permission:' . $permission, [], [$permission => true]);
+        $resource = new \Core\Navigation\GenericResource(
+            'system:permission:' . $permission,
+            [['type' => 'permission', 'value' => $permission]],
+            ['PUB' => false]
+        );
 
         if (!$evaluator->canAccess($resource, $ctx)) {
             Show::msg(Lang::get('permissions.denied'), 'error');

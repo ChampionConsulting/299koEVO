@@ -16,7 +16,7 @@ class AdminTestMode
 
     private function __construct()
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (PHP_SAPI !== 'cli' && !headers_sent() && session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         $this->active = $_SESSION['admin_test_mode_active'] ?? false;

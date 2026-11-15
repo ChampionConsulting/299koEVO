@@ -104,6 +104,9 @@ class Core
         if (!is_dir(DATA_CORE_EXTENSIONS)) {
             @mkdir(DATA_CORE_EXTENSIONS, 0755, true);
         }
+        if (!is_dir(DATA_CORE_CONTENT)) {
+            @mkdir(DATA_CORE_CONTENT, 0755, true);
+        }
         if (!is_dir(UPLOAD . 'files')) {
             @mkdir(UPLOAD . 'files', 0755, true);
         }
@@ -120,23 +123,25 @@ class Core
         $this->loadEnv();
         $this->createLogger();
 
-        // Sécurité : En-têtes HTTP globaux
-        // Protection contre le clickjacking
-        header('X-Frame-Options: SAMEORIGIN');
-        // Protection contre le sniffing de MIME type
-        header('X-Content-Type-Options: nosniff');
-        // Protection XSS pour les navigateurs anciens
-        header('X-XSS-Protection: 1; mode=block');
-        // Politique de referrer
-        header('Referrer-Policy: strict-origin-when-cross-origin');
-        // Politique de permissions (désactivation fonctionnalités sensibles par défaut)
-        // Correction : Autoriser geolocation pour 'self' pour la carte interactive
-        header('Permissions-Policy: geolocation=(self), microphone=(), camera=()');
+        // Sécurité : En-têtes HTTP globaux (ignorés en mode CLI ou si en-têtes déjà émis)
+        if (PHP_SAPI !== 'cli' && !headers_sent()) {
+            // Protection contre le clickjacking
+            header('X-Frame-Options: SAMEORIGIN');
+            // Protection contre le sniffing de MIME type
+            header('X-Content-Type-Options: nosniff');
+            // Protection XSS pour les navigateurs anciens
+            header('X-XSS-Protection: 1; mode=block');
+            // Politique de referrer
+            header('Referrer-Policy: strict-origin-when-cross-origin');
+            // Politique de permissions (désactivation fonctionnalités sensibles par défaut)
+            // Correction : Autoriser geolocation pour 'self' pour la carte interactive
+            header('Permissions-Policy: geolocation=(self), microphone=(), camera=()');
 
-        // Content Security Policy (CSP) Permissive pour commencer
-        // Autorise 'self', les scripts inline (nécessaire pour legacy), et les images data/https
-        // À durcir progressivement
-        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https: https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https:;");
+            // Content Security Policy (CSP) Permissive pour commencer
+            // Autorise 'self', les scripts inline (nécessaire pour legacy), et les images data/https
+            // À durcir progressivement
+            header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' data: https: https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https:;");
+        }
 
         // Timezone
         date_default_timezone_set('Europe/Paris');
@@ -205,6 +210,12 @@ class Core
 
         $this->locale = $this->determineLocale();
         Lang::setLocale($this->locale);
+        if (class_exists('\Template\Template')) {
+            \Template\Template::addGlobal('ACTIVE_LOCALE', $this->locale);
+            $tm = class_exists('\Core\Translation\TranslationManager') ? \Core\Translation\TranslationManager::getInstance() : null;
+            \Template\Template::addGlobal('DEFAULT_LOCALE', $tm ? $tm->getDefaultLocale() : $this->locale);
+            \Template\Template::addGlobal('ENABLED_LOCALES', $tm ? $tm->getEnabledLocales() : [$this->locale]);
+        }
         Lang::loadLanguageFile(COMMON . 'langs/');
         Lang::loadLanguageFile(COMMON . 'langs/pluginsmanager/');
         Lang::loadLanguageFile(COMMON . 'langs/marketplace/');
@@ -301,6 +312,9 @@ class Core
         $this->settings();
         $this->settings()->registerRoutes(Router::getInstance());
         $this->extensions()->registerRoutes(Router::getInstance());
+        if (class_exists('\Core\Api\ApiManager')) {
+            \Core\Api\ApiManager::getInstance()->registerRouterRoutes(Router::getInstance());
+        }
         
         // Exposer l'URI courante nettoyée dans le template globalement
         \Template\Template::addGlobal('CURRENT_URI', Router::getInstance()->getCleanURI());
@@ -451,12 +465,22 @@ class Core
 
     protected function determineLocale(): string
     {
+        $prefixLocale = Router::getInstance()->getActivePrefixLocale();
+        if ($prefixLocale !== null && $prefixLocale !== '') {
+            return $prefixLocale;
+        }
+        if (isset($_GET['lang']) && preg_match('/^[a-zA-Z]{2,5}$/', (string) $_GET['lang'])) {
+            $candidate = strtolower((string) $_GET['lang']);
+            if (!class_exists('\Core\Translation\TranslationManager') || \Core\Translation\TranslationManager::getInstance()->isEnabledLocale($candidate)) {
+                return $candidate;
+            }
+        }
         $locale = $this->getConfigVal('siteLang');
         if ($locale === false) {
             if (isset($_GET['lang'])) {
                 $locale = $_GET['lang'];
             } else {
-                $navLang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+                $navLang = substr((string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''), 0, 2);
                 if (file_exists(COMMON . 'langs/' . $navLang . '.ini')) {
                     $locale = $navLang;
                 } else {
@@ -466,6 +490,15 @@ class Core
         }
 
         return (string) $locale;
+    }
+
+    public function setLocale(string $locale): void
+    {
+        $this->locale = strtolower(trim($locale));
+        Lang::setLocale($this->locale);
+        if (class_exists('\Template\Template')) {
+            \Template\Template::addGlobal('ACTIVE_LOCALE', $this->locale);
+        }
     }
 
     public function addMeta(string $meta)
@@ -1128,6 +1161,7 @@ class Core
                         strpos($controller, 'Core\\Media\\Controllers\\') === 0 ||
                         strpos($controller, 'Core\\Storage\\Controllers\\') === 0 ||
                         strpos($controller, 'Core\\Extensions\\Controllers\\') === 0 ||
+                        strpos($controller, 'Core\\Api\\Controllers\\') === 0 ||
                         strpos($controller, 'Core\\Controllers\\') === 0) {
                         $controllerFile = str_replace('\\', DIRECTORY_SEPARATOR, $controller);
                         $controllerFile = COMMON . $controllerFile . '.php';

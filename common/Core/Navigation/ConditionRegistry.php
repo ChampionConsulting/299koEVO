@@ -59,6 +59,7 @@ class ConditionRegistry
     {
         $this->registerProvider(new \Core\Navigation\Providers\AuthProvider());
         $this->registerProvider(new \Core\Navigation\Providers\RoleProvider());
+        $this->registerProvider(new \Core\Navigation\Providers\PermissionProvider());
         $this->registerProvider(new \Core\Navigation\Providers\SqlProvider());
         $this->registerProvider(new \Core\Navigation\Providers\JsonProvider());
         $this->registerProvider(new \Core\Navigation\Providers\MetadataProvider());

@@ -24,6 +24,8 @@ class Router extends \AltoRouter {
 
     protected static $url;
 
+    private ?string $activePrefixLocale = null;
+
     private function __construct() {
         if (!empty($_SERVER['REQUEST_URL'])) {
             $url = $this->stripFbclid($_SERVER['REQUEST_URL']);
@@ -37,7 +39,7 @@ class Router extends \AltoRouter {
         self::$url = $url;
         parent::__construct();
         // Normaliser BASE_PATH : si c'est '.' ou '/' ou vide, utiliser une chaîne vide
-        $basePath = str_replace('\\', '/', BASE_PATH);
+        $basePath = str_replace('\\', '/', defined('BASE_PATH') ? BASE_PATH : '');
         $basePath = rtrim($basePath, '/');
         if ($basePath === '.' || $basePath === '') {
             $basePath = '';
@@ -54,7 +56,29 @@ class Router extends \AltoRouter {
         if (($pos = strpos($requestUrl, "?")) !== false) {
             $requestUrl = substr($requestUrl, 0, $pos);
         }
-        return substr($requestUrl, strlen($this->basePath));
+        $clean = substr($requestUrl, strlen($this->basePath));
+        $parsed = $this->parseLocalizedUri($clean);
+        if ($parsed['locale'] !== null) {
+            $this->activePrefixLocale = $parsed['locale'];
+            return $parsed['path'];
+        }
+        return $clean;
+    }
+
+    public function getActivePrefixLocale(): ?string
+    {
+        return $this->activePrefixLocale;
+    }
+
+    /**
+     * @return array{locale:?string,path:string}
+     */
+    public function parseLocalizedUri(string $uri): array
+    {
+        if (class_exists('\Core\Translation\TranslationManager')) {
+            return \Core\Translation\TranslationManager::getInstance()->extractLocaleFromPath($uri);
+        }
+        return ['locale' => null, 'path' => $uri];
     }
 
     public function getBasePath() {
@@ -114,6 +138,22 @@ class Router extends \AltoRouter {
         }
         if ($requestMethod === null) {
             $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        }
+
+        // Retrait non-destructif d'un éventuel préfixe de langue active (/en/..., /de/...)
+        $querySuffix = '';
+        $pathPart = (string) $requestUrl;
+        if (($qPos = strpos($pathPart, '?')) !== false) {
+            $querySuffix = substr($pathPart, $qPos);
+            $pathPart = substr($pathPart, 0, $qPos);
+        }
+        $relative = $this->basePath !== '' && str_starts_with($pathPart, $this->basePath)
+            ? substr($pathPart, strlen($this->basePath))
+            : $pathPart;
+        $parsed = $this->parseLocalizedUri($relative ?: '/');
+        if ($parsed['locale'] !== null) {
+            $this->activePrefixLocale = $parsed['locale'];
+            $requestUrl = $this->basePath . $parsed['path'] . $querySuffix;
         }
         
         return parent::match($requestUrl, $requestMethod);

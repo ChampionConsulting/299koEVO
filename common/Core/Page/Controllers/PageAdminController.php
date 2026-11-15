@@ -362,6 +362,7 @@ class PageAdminController extends AdminController {
         $tpl->set('activePlugins', $activePlugins);
         $tpl->set('extraSections', $extraData['sections'] ?? []);
         $tpl->set('extraHiddenFields', $extraData['hiddenFields'] ?? '');
+        $this->populateEditorialTemplateVars($tpl, $pageItem);
         
         $response->addTemplate($tpl);
         return $response;
@@ -428,6 +429,7 @@ class PageAdminController extends AdminController {
         $tpl->set('activePlugins', $activePlugins);
         $tpl->set('extraSections', $extraData['sections'] ?? []);
         $tpl->set('extraHiddenFields', $extraData['hiddenFields'] ?? '');
+        $this->populateEditorialTemplateVars($tpl, $pageItem);
         
         $response->addTemplate($tpl);
         return $response;
@@ -736,7 +738,9 @@ class PageAdminController extends AdminController {
     public function save() {
         $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
         $ctx = new \Core\Navigation\ConditionContext($this->user);
-        if (!$evaluator->isAdmin($ctx)) {
+        $canEdit = $evaluator->isAdmin($ctx)
+            || $evaluator->canAccess(new \Core\Navigation\GenericResource('core:page:edit', [['type' => 'permission', 'value' => ['pages.edit', 'pages.manage']]]), $ctx);
+        if (!$canEdit) {
             return $this->list();
         }
         
@@ -783,7 +787,44 @@ class PageAdminController extends AdminController {
         $pageItem->setIsHomepage((isset($_POST['isHomepage'])) ? 1 : 0);
         $pageItem->setContent($contentEditor->getPostContent());
         $pageItem->setFile($_POST['file'] ?? '');
-        $pageItem->setIsHidden((isset($_POST['isHidden']) && (int)$_POST['isHidden'] === 1) ? 1 : 0);
+
+        // Workflow éditorial (rétrocompatible avec l'ancien champ isHidden)
+        $requestedStatus = isset($_POST['status']) ? trim((string) $_POST['status']) : '';
+        if ($requestedStatus === '') {
+            $requestedStatus = (isset($_POST['isHidden']) && (int)$_POST['isHidden'] === 1) ? 'draft' : 'published';
+        }
+        $wf = \Core\Editorial\WorkflowManager::getInstance();
+        $currentStatus = $isNewPage ? 'draft' : $pageItem->getStatus();
+        $allowedTransition = $isNewPage
+            ? $wf->canSetInitialStatus($requestedStatus, $this->user, 'pages.publish', ['type' => 'permission', 'value' => ['pages.edit', 'pages.manage']])
+            : $wf->canTransition($currentStatus, $requestedStatus, $this->user, 'pages.publish', ['type' => 'permission', 'value' => ['pages.edit', 'pages.manage']]);
+        if ($allowedTransition) {
+            $pageItem->setStatus($requestedStatus);
+        } elseif ($requestedStatus !== $currentStatus) {
+            Show::msg('Transition de workflow non autorisée avec vos droits actuels ; statut maintenu à « ' . $currentStatus . ' ».', 'warning');
+        }
+
+        // Blocs éditoriaux structurés
+        if (isset($_POST['blocks_json']) && trim((string) $_POST['blocks_json']) !== '') {
+            $decodedBlocks = json_decode((string) $_POST['blocks_json'], true);
+            if (is_array($decodedBlocks)) {
+                $validation = \Core\Blocks\BlockManager::getInstance()->validateComposition($decodedBlocks);
+                if ($validation['valid']) {
+                    $pageItem->setBlocks($validation['blocks']);
+                } else {
+                    Show::msg('Blocs ignorés : ' . implode(' ; ', $validation['errors']), 'warning');
+                }
+            }
+        }
+
+        // Langue et groupe de traduction
+        if (isset($_POST['locale'])) {
+            $pageItem->setLocale((string) $_POST['locale']);
+        }
+        if (isset($_POST['translation_group'])) {
+            $pageItem->setTranslationGroup((string) $_POST['translation_group']);
+        }
+
         $pageItem->setMainTitle($_POST['mainTitle'] ?? '');
         $pageItem->setMetaDescriptionTag($_POST['metaDescriptionTag'] ?? '');
         $pageItem->setMetaTitleTag($_POST['metaTitleTag'] ?? '');
@@ -831,6 +872,18 @@ class PageAdminController extends AdminController {
         $saveResult = $page->save($pageItem);
         
         if ($saveResult) {
+            // Champs personnalisés éventuels rattachés au type natif 'page'
+            if (isset($_POST['custom_fields']) && is_array($_POST['custom_fields'])) {
+                $ctm = \Core\Content\ContentTypeManager::getInstance();
+                $pageType = $ctm->get('page');
+                if ($pageType !== null && !empty($pageType->getFields())) {
+                    $cfRes = $ctm->saveTargetFields('page', (string) $pageItem->getId(), $_POST['custom_fields'], $this->user);
+                    if (!$cfRes['success']) {
+                        Show::msg('Champs personnalisés : ' . implode(' ; ', $cfRes['errors']), 'warning');
+                    }
+                }
+            }
+
             if ($isNewPage && $pageItem->targetIs() === 'page' && !empty($_POST['addToMainMenu'])) {
                 \Core\Navigation\MenuService::getInstance()->createItem([
                     'location'   => 'main',
@@ -856,6 +909,85 @@ class PageAdminController extends AdminController {
             $this->core->redirect($this->router->generate('page-admin-home'));
         }
         die();
+    }
+
+    /**
+     * Restaure une révision antérieure d'une page depuis l'administration.
+     */
+    public function restoreRevision()
+    {
+        $csrfToken = $this->request->post('_csrf') ?? null;
+        if (!\Core\Security\Csrf::validate($csrfToken)) {
+            Show::msg(Lang::get('core-csrf-invalid'), 'error');
+            $this->core->redirect($this->router->generate('page-admin-home'));
+        }
+
+        $revisionId = trim((string) ($this->request->post('revision_id') ?? ''));
+        $pageId = trim((string) ($this->request->post('page_id') ?? ''));
+
+        $res = \Core\Editorial\RevisionManager::getInstance()->restoreRevision($revisionId, $this->user);
+        if ($res['success']) {
+            Show::msg('Révision restaurée avec succès.', 'success');
+        } else {
+            Show::msg($res['error'] ?: 'Impossible de restaurer la révision.', 'error');
+        }
+
+        if ($pageId !== '') {
+            $this->core->redirect($this->router->generate('page-admin-edit', ['id' => $pageId]));
+        }
+        $this->core->redirect($this->router->generate('page-admin-home'));
+    }
+
+    private function populateEditorialTemplateVars(\Template\Template $tpl, PageItem $pageItem): void
+    {
+        $wf = \Core\Editorial\WorkflowManager::getInstance();
+        $workflowStatuses = $wf->getAvailableStatuses(
+            $pageItem->getStatus(),
+            $this->user,
+            'pages.publish',
+            [['type' => 'permission', 'value' => ['pages.edit', 'pages.manage']]]
+        );
+
+        $bm = \Core\Blocks\BlockManager::getInstance();
+        $blockDefs = [];
+        foreach ($bm->all() as $type => $def) {
+            $blockDefs[$type] = [
+                'type' => $def->getType(),
+                'label' => $def->getLabel(),
+                'category' => $def->getCategory(),
+                'defaultData' => $def->getDefaultData(),
+            ];
+        }
+
+        $revisions = [];
+        if ($pageItem->getId()) {
+            foreach (\Core\Editorial\RevisionManager::getInstance()->getHistory('page', $pageItem->getId(), 20) as $rev) {
+                $revisions[] = $rev->toArray();
+            }
+        }
+
+        $ctm = \Core\Content\ContentTypeManager::getInstance();
+        $pageType = $ctm->get('page');
+        $customFieldsHtml = '';
+        $hasCustomFields = false;
+        if ($pageType !== null && !empty($pageType->getFields())) {
+            $hasCustomFields = true;
+            $values = $pageItem->getId() ? $ctm->getTargetFields('page', (string) $pageItem->getId(), $this->user) : [];
+            $customFieldsHtml = \Core\Content\FieldManager::getInstance()->renderFormFields($pageType->getFields(), $values, $this->user, 'custom_fields');
+        }
+
+        $locales = class_exists('\Core\Translation\TranslationManager')
+            ? \Core\Translation\TranslationManager::getInstance()->getEnabledLocales()
+            : ['fr', 'en', 'de'];
+
+        $tpl->set('workflowStatuses', $workflowStatuses);
+        $tpl->set('currentStatus', $pageItem->getStatus());
+        $tpl->set('blocksJson', json_encode($pageItem->getBlocks(), JSON_UNESCAPED_UNICODE) ?: '[]');
+        $tpl->set('blockDefsJson', json_encode($blockDefs, JSON_UNESCAPED_UNICODE) ?: '{}');
+        $tpl->set('pageRevisions', $revisions);
+        $tpl->set('customFieldsHtml', $customFieldsHtml);
+        $tpl->set('hasCustomFields', $hasCustomFields);
+        $tpl->set('enabledLocales', $locales);
     }
 
 }
