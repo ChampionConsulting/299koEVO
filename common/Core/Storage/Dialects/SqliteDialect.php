@@ -54,7 +54,8 @@ class SqliteDialect implements SqlDialectInterface
 
     public function getColumnsSql(string $tableName): string
     {
-        return "PRAGMA table_info($tableName)";
+        $clean = trim($tableName, '` ');
+        return "PRAGMA table_info(`$clean`)";
     }
 
     public function getName(): string
@@ -64,14 +65,21 @@ class SqliteDialect implements SqlDialectInterface
 
     public function getCreateTableSql(string $table, string $pk, array $columns, array $indexes = []): string
     {
-        $lines = ["$pk INTEGER PRIMARY KEY AUTOINCREMENT"];
+        $pkTypeSpec = strtolower((string) ($columns[$pk] ?? ''));
+        $isStringPk = ($pk !== 'id' && strpos($pkTypeSpec, 'int') === false && strpos($pkTypeSpec, 'serial') === false)
+            || strpos($pkTypeSpec, 'varchar') !== false
+            || strpos($pkTypeSpec, 'char') !== false
+            || strpos($pkTypeSpec, 'text') !== false
+            || strpos($pkTypeSpec, 'string') !== false;
+
+        $lines = [$isStringPk ? "`$pk` TEXT PRIMARY KEY" : "`$pk` INTEGER PRIMARY KEY AUTOINCREMENT"];
         foreach ($columns as $name => $type) {
             if ($name === $pk) continue;
-            $sqlType = $this->mapToSqlType($type);
-            $lines[] = "$name $sqlType";
+            $sqlType = $this->mapToSqlType((string) $type);
+            $lines[] = "`$name` $sqlType";
         }
 
-        $sql = "CREATE TABLE IF NOT EXISTS $table (" . implode(', ', $lines) . ")";
+        $sql = "CREATE TABLE IF NOT EXISTS `$table` (" . implode(', ', $lines) . ")";
         // Indexes are typically separate in SQLite for CREATE TABLE cleanliness
         return $sql;
     }
@@ -79,12 +87,12 @@ class SqliteDialect implements SqlDialectInterface
     public function getAlterTableSql(string $table, string $column, string $type): string
     {
         $sqlType = $this->mapToSqlType($type);
-        return "ALTER TABLE $table ADD COLUMN $column $sqlType";
+        return "ALTER TABLE `$table` ADD COLUMN `$column` $sqlType";
     }
 
     public function getIndexSql(string $table, string $column): string
     {
-        return "CREATE INDEX IF NOT EXISTS idx_{$table}_{$column} ON $table($column)";
+        return "CREATE INDEX IF NOT EXISTS `idx_{$table}_{$column}` ON `$table`(`$column`)";
     }
 
     private function mapToSqlType(string $type): string

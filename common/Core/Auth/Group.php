@@ -9,6 +9,21 @@ defined('ROOT') or exit('Access denied!');
 class Group extends JsonActiveRecord
 {
     protected static string $filePath = DATA_CORE_AUTH . 'groups.json';
+    protected static string $tableName = 'groups';
+
+    protected static array $casts = [
+        'permissions' => 'array',
+    ];
+
+    protected static function getSchema(): array
+    {
+        return [
+            'name' => 'VARCHAR(150)',
+            'slug' => 'VARCHAR(100)',
+            'permissions' => 'text',
+            'system' => 'boolean',
+        ];
+    }
 
     public function getSlug(): string
     {

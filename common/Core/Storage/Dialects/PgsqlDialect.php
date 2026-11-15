@@ -68,10 +68,17 @@ class PgsqlDialect implements SqlDialectInterface
 
     public function getCreateTableSql(string $table, string $pk, array $columns, array $indexes = []): string
     {
-        $lines = ["\"$pk\" SERIAL PRIMARY KEY"];
+        $pkTypeSpec = strtolower((string) ($columns[$pk] ?? ''));
+        $isStringPk = ($pk !== 'id' && strpos($pkTypeSpec, 'int') === false && strpos($pkTypeSpec, 'serial') === false)
+            || strpos($pkTypeSpec, 'varchar') !== false
+            || strpos($pkTypeSpec, 'char') !== false
+            || strpos($pkTypeSpec, 'text') !== false
+            || strpos($pkTypeSpec, 'string') !== false;
+
+        $lines = [$isStringPk ? "\"$pk\" VARCHAR(64) PRIMARY KEY" : "\"$pk\" SERIAL PRIMARY KEY"];
         foreach ($columns as $name => $type) {
             if ($name === $pk) continue;
-            $sqlType = $this->mapToSqlType($type);
+            $sqlType = $this->mapToSqlType((string) $type);
             $lines[] = "\"$name\" $sqlType";
         }
 

@@ -24,6 +24,8 @@ abstract class JsonActiveRecord implements \ArrayAccess
     protected static array $indexes = [];
     protected static bool $isBooted = false;
     private static array $bootedModels = [];
+    private static array $filePathOverrides = [];
+    private static ?array $storageManifestCache = null;
 
     protected $queryConditions = [];
     protected $queryOrderBy = [];
@@ -84,11 +86,11 @@ abstract class JsonActiveRecord implements \ArrayAccess
     }
 
     /**
-     * Set the file path for the JSON file (Legacy)
+     * Set the file path for the JSON file (Legacy), isolated per subclass.
      */
     public static function setFilePath(string $path): void
     {
-        static::$filePath = $path;
+        self::$filePathOverrides[static::class] = $path;
     }
 
     /**
@@ -100,12 +102,218 @@ abstract class JsonActiveRecord implements \ArrayAccess
     }
 
     /**
+     * Inspect inheritance chain from static::class up to self::class (exclusive).
+     *
+     * @return \ReflectionClass[]
+     */
+    private static function getSubclassChain(): array
+    {
+        $chain = [];
+        $curr = new \ReflectionClass(static::class);
+        while ($curr && $curr->getName() !== self::class) {
+            $chain[] = $curr;
+            $curr = $curr->getParentClass();
+        }
+        return $chain;
+    }
+
+    /**
+     * Load and index plugin storage.json manifests once per process.
+     */
+    private static function getStorageManifests(): array
+    {
+        if (self::$storageManifestCache !== null) {
+            return self::$storageManifestCache;
+        }
+        $byClass = [];
+        $byTable = [];
+        $pluginsRoot = defined('PLUGINS') ? PLUGINS : (defined('ROOT') ? ROOT . 'plugin/' : '');
+        if ($pluginsRoot !== '' && is_dir($pluginsRoot)) {
+            $files = @glob(rtrim($pluginsRoot, '/\\') . '/*/param/storage.json') ?: [];
+            foreach ($files as $file) {
+                $raw = @file_get_contents($file);
+                if ($raw === false) {
+                    continue;
+                }
+                $decoded = json_decode($raw, true);
+                if (!is_array($decoded)) {
+                    continue;
+                }
+                foreach ($decoded as $entityKey => $entry) {
+                    if (!is_array($entry)) {
+                        continue;
+                    }
+                    $table = (string) ($entry['table'] ?? '');
+                    $class = ltrim((string) ($entry['class'] ?? ''), '\\');
+                    $fileRel = (string) ($entry['file'] ?? $entry['json_file'] ?? '');
+                    $pk = (string) ($entry['primaryKey'] ?? '');
+                    $columns = self::parseManifestSchema($entry['schema'] ?? null);
+                    $normalized = [
+                        'entity' => (string) $entityKey,
+                        'class' => $class,
+                        'table' => $table,
+                        'file' => $fileRel,
+                        'primaryKey' => $pk,
+                        'columns' => $columns,
+                    ];
+                    if ($class !== '') {
+                        $byClass[strtolower($class)] = $normalized;
+                    }
+                    if ($table !== '') {
+                        $byTable[strtolower($table)] = $normalized;
+                    }
+                }
+            }
+        }
+        self::$storageManifestCache = ['byClass' => $byClass, 'byTable' => $byTable];
+        return self::$storageManifestCache;
+    }
+
+    /**
+     * Parse storage.json schema (either column=>type map or CREATE TABLE DDL string).
+     *
+     * @param mixed $schema
+     * @return array<string, string>
+     */
+    private static function parseManifestSchema($schema): array
+    {
+        if (is_array($schema)) {
+            $cols = [];
+            foreach ($schema as $col => $type) {
+                if (is_string($col) && $col !== '' && is_string($type)) {
+                    $cols[$col] = $type;
+                }
+            }
+            return $cols;
+        }
+        if (!is_string($schema) || trim($schema) === '') {
+            return [];
+        }
+        if (!preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"\[]?[a-zA-Z0-9_]+[`"\]]?\s*\((.*)\)/is', $schema, $m)) {
+            return [];
+        }
+        $body = $m[1];
+        $parts = [];
+        $current = '';
+        $depth = 0;
+        $len = strlen($body);
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $body[$i];
+            if ($ch === '(') {
+                $depth++;
+            } elseif ($ch === ')') {
+                if ($depth > 0) {
+                    $depth--;
+                }
+            }
+            if ($ch === ',' && $depth === 0) {
+                $parts[] = trim($current);
+                $current = '';
+            } else {
+                $current .= $ch;
+            }
+        }
+        if (trim($current) !== '') {
+            $parts[] = trim($current);
+        }
+
+        $cols = [];
+        foreach ($parts as $part) {
+            if ($part === '' || preg_match('/^(?:PRIMARY\s+KEY|UNIQUE|INDEX|KEY|FULLTEXT|CONSTRAINT|FOREIGN\s+KEY)\b/i', $part)) {
+                continue;
+            }
+            if (preg_match('/^[`"\[]?([a-zA-Z_][a-zA-Z0-9_]*)[`"\]]?\s+(.+)$/is', $part, $cm)) {
+                $colName = $cm[1];
+                $colDef = trim($cm[2]);
+                // Extract clean SQL type token (e.g. VARCHAR(255), DECIMAL(10,2), INT, DATETIME, TINYINT(1), TEXT)
+                if (preg_match('/^([a-zA-Z]+(?:\s*\([^)]+\))?)/i', $colDef, $tm)) {
+                    $cols[$colName] = strtoupper(preg_replace('/\s+/', '', $tm[1]));
+                } else {
+                    $cols[$colName] = 'TEXT';
+                }
+            }
+        }
+        return $cols;
+    }
+
+    /**
+     * Find matching storage.json manifest entry for current class or table name.
+     */
+    private static function resolveManifestEntry(?string $tableName = null): ?array
+    {
+        $manifests = self::getStorageManifests();
+        $fqcnKey = strtolower(ltrim(static::class, '\\'));
+        if (isset($manifests['byClass'][$fqcnKey])) {
+            return $manifests['byClass'][$fqcnKey];
+        }
+        if ($tableName !== null && $tableName !== '' && isset($manifests['byTable'][strtolower($tableName)])) {
+            return $manifests['byTable'][strtolower($tableName)];
+        }
+        return null;
+    }
+
+    /**
+     * Resolve effective table/entity name cleanly along subclass hierarchy ($tableName > $table per class).
+     */
+    protected static function resolveTableName(?string $className = null): string
+    {
+        foreach (self::getSubclassChain() as $cls) {
+            foreach (['tableName', 'table'] as $propName) {
+                if ($cls->hasProperty($propName)) {
+                    $prop = $cls->getProperty($propName);
+                    if ($prop->getDeclaringClass()->getName() === $cls->getName() && $prop->isStatic() && $prop->isInitialized()) {
+                        $val = (string) $prop->getValue();
+                        if ($val !== '') {
+                            return $val;
+                        }
+                    }
+                }
+            }
+        }
+        $manifest = self::resolveManifestEntry(null);
+        if ($manifest !== null && $manifest['table'] !== '') {
+            return $manifest['table'];
+        }
+        $short = ($className !== null && $className !== '') ? $className : basename(str_replace('\\', '/', static::class));
+        $snake = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $short));
+        return $snake;
+    }
+
+    /**
+     * Resolve effective JSON storage file path without leaking parent static $filePath overrides.
+     */
+    protected static function resolveFilePath(?string $className = null): string
+    {
+        if (isset(self::$filePathOverrides[static::class]) && self::$filePathOverrides[static::class] !== '') {
+            return self::$filePathOverrides[static::class];
+        }
+        foreach (self::getSubclassChain() as $cls) {
+            if ($cls->hasProperty('filePath')) {
+                $prop = $cls->getProperty('filePath');
+                if ($prop->getDeclaringClass()->getName() === $cls->getName() && $prop->isStatic() && $prop->isInitialized()) {
+                    $val = (string) $prop->getValue();
+                    if ($val !== '') {
+                        return $val;
+                    }
+                }
+            }
+        }
+        $table = static::resolveTableName($className);
+        $base = defined('DATA_PLUGIN') ? DATA_PLUGIN : (defined('DATA') ? DATA . 'plugin/' : '');
+        $manifest = self::resolveManifestEntry($table);
+        if ($manifest !== null && $manifest['file'] !== '') {
+            return $base . ltrim($manifest['file'], '/\\');
+        }
+        return $base . $table . '/' . $table . '.json';
+    }
+
+    /**
      * Return the table name
      */
     public function getTableName(): string
     {
         $className = basename(str_replace('\\', '/', get_called_class()));
-        return static::$tableName ?? strtolower($className);
+        return static::resolveTableName($className);
     }
 
     /**
@@ -170,47 +378,77 @@ abstract class JsonActiveRecord implements \ArrayAccess
     }
 
     /**
+     * Check whether the calling subclass explicitly overrides static $storageDriver.
+     */
+    private static function getSubclassStorageDriver(): ?string
+    {
+        foreach (self::getSubclassChain() as $cls) {
+            if ($cls->hasProperty('storageDriver')) {
+                $prop = $cls->getProperty('storageDriver');
+                if ($prop->getDeclaringClass()->getName() === $cls->getName() && $prop->isStatic() && $prop->isInitialized()) {
+                    $val = (string) $prop->getValue();
+                    if ($val !== '') {
+                        return $val;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Factory to get the delegated storage implementation.
      */
     protected static function getStorage(): StorageInterface
     {
         $db = \Core\Database::getInstance();
         $className = basename(str_replace('\\', '/', get_called_class()));
+        $fqcn = ltrim(static::class, '\\');
 
-        // Priority: 1. Individual model config in env.json, 2. Class property static::$storageDriver, 3. Global storage.default
-        $driver = $db->getConfig("$className")
-            ?? static::$storageDriver
-            ?? $db->getConfig("default");
+        // Priority: 1. Model config in env.json (FQCN or short class), 2. Subclass static::$storageDriver override, 3. Global storage.default, 4. JSON
+        $driver = $db->getConfig($fqcn)
+            ?? $db->getConfig($className)
+            ?? self::getSubclassStorageDriver()
+            ?? $db->getConfig('default')
+            ?? self::DRIVER_JSON;
 
         EmergencyLogger::log("STORAGE_HUB: Model=$className selected_driver=$driver");
+
+        $resolvedTable = static::resolveTableName($className);
+        $resolvedFile = static::resolveFilePath($className);
 
         $storage = null;
         if ($driver !== self::DRIVER_JSON) {
             // Si le driver n'est pas "json", c'est soit "sql" (default), soit un nom de connexion spécifique (ex: "sqlite")
             $connectionName = ($driver === self::DRIVER_SQL) ? static::$connectionName : $driver;
-            
+
             $primary = new SqlStorage(
                 $db->setActiveConnection($connectionName),
-                static::$tableName ?? strtolower($className),
+                $resolvedTable,
                 static::$primaryKey,
                 static::$attributeMapping
             );
 
             // Fallback JSON automatique
-            $fallback = new JsonStorage(static::$filePath, static::$primaryKey);
+            $fallback = new JsonStorage($resolvedFile, static::$primaryKey);
 
             $storage = new FallbackStorage($primary, $fallback);
         } else {
-            $storage = new JsonStorage(static::$filePath, static::$primaryKey);
+            $connectionName = 'json';
+            $storage = new JsonStorage($resolvedFile, static::$primaryKey);
         }
 
-        // Auto-Migration (Lazy boot per concrete model class & active driver)
+        // Auto-Migration (Lazy boot per concrete model class, active driver, and DB target)
         $modelClass = static::class;
-        $bootKey = $modelClass . '|' . (string) $driver;
+        $fullConf = $db->getFullConfig();
+        $connConf = ($connectionName === 'default')
+            ? ($fullConf['database'] ?? [])
+            : ($fullConf['databases'][$connectionName] ?? $fullConf['database'] ?? []);
+        $bootKey = $modelClass . '|' . (string) $driver . '|' . $resolvedTable . '|' . md5((string) json_encode($connConf));
         if (empty(self::$bootedModels[$bootKey])) {
             static::$isBooted = true;
             $ensured = $storage->ensureTable(
-                static::$tableName ?? strtolower($className),
+                $resolvedTable,
                 static::$primaryKey,
                 static::getSchema(),
                 static::$indexes
@@ -225,12 +463,27 @@ abstract class JsonActiveRecord implements \ArrayAccess
 
     protected static function getSchema(): array
     {
-        if (property_exists(static::class, 'schema') && !empty(static::$schema)) {
-            return static::$schema;
-        }
         $schema = [];
+        $table = static::resolveTableName();
+        $manifest = self::resolveManifestEntry($table);
+        if ($manifest !== null && !empty($manifest['columns'])) {
+            $schema = $manifest['columns'];
+        }
+        foreach (array_reverse(self::getSubclassChain()) as $cls) {
+            if ($cls->hasProperty('schema')) {
+                $prop = $cls->getProperty('schema');
+                if ($prop->getDeclaringClass()->getName() === $cls->getName() && $prop->isStatic() && $prop->isInitialized()) {
+                    $val = $prop->getValue();
+                    if (is_array($val)) {
+                        $schema = array_merge($schema, $val);
+                    }
+                }
+            }
+        }
         foreach (static::$casts as $key => $type) {
-            $schema[$key] = $type;
+            if (!isset($schema[$key])) {
+                $schema[$key] = $type;
+            }
         }
         return $schema;
     }
@@ -416,20 +669,33 @@ abstract class JsonActiveRecord implements \ArrayAccess
             $this->attributes[$attr] = $this->{$attr};
         }
 
-        $id = (string) ($this->attributes[static::$primaryKey] ?? '');
+        $pk = static::$primaryKey;
+        $id = (string) ($this->attributes[$pk] ?? '');
+        $wasEmptyId = ($id === '');
         $storage = static::getStorage();
-        
+
         $isSql = ($storage instanceof \Core\Storage\SqlStorage) || ($storage instanceof \Core\Storage\FallbackStorage);
 
-        if (empty($id)) {
-            // Only generate an id if we are NOT using SQL driver (or Fallback which implies SQL primary)
-            // For SQL, we want to let the database handle AUTO_INCREMENT
-            if (!$isSql) {
+        $schema = static::getSchema();
+        $pkType = strtolower((string) ($schema[$pk] ?? ''));
+        $isStringPk = ($pk !== 'id' && strpos($pkType, 'int') === false && strpos($pkType, 'serial') === false)
+            || strpos($pkType, 'varchar') !== false
+            || strpos($pkType, 'char') !== false
+            || strpos($pkType, 'text') !== false
+            || strpos($pkType, 'string') !== false;
+
+        if ($wasEmptyId) {
+            if ($isSql) {
+                if ($isStringPk) {
+                    $id = bin2hex(random_bytes(8));
+                    $this->attributes[$pk] = $id;
+                }
+            } else {
                 if (property_exists(static::class, 'autoIncrementId') && static::$autoIncrementId) {
                     $existing = $storage->findAll([]);
                     $maxId = 0;
                     foreach ($existing as $row) {
-                        $rowId = (int) ($row[static::$primaryKey] ?? 0);
+                        $rowId = (int) ($row[$pk] ?? 0);
                         if ($rowId > $maxId) {
                             $maxId = $rowId;
                         }
@@ -444,9 +710,9 @@ abstract class JsonActiveRecord implements \ArrayAccess
         // Apply casts for storage (encode arrays to JSON if using SQL)
         $storageData = $this->attributes;
         if ($isSql) {
-            foreach (static::$casts as $key => $type) {
-                if (isset($storageData[$key]) && is_array($storageData[$key])) {
-                    $storageData[$key] = json_encode($storageData[$key], JSON_UNESCAPED_UNICODE);
+            foreach ($storageData as $key => $val) {
+                if (is_array($val)) {
+                    $storageData[$key] = json_encode($val, JSON_UNESCAPED_UNICODE);
                 }
             }
         }
@@ -454,10 +720,10 @@ abstract class JsonActiveRecord implements \ArrayAccess
         $success = $storage->save($id, $storageData);
 
         if ($success) {
-            if ($isSql && empty($id)) {
+            if ($isSql && $id === '') {
                 $id = \Core\Database::getInstance()->lastInsertId();
             }
-            $this->attributes[static::$primaryKey] = $id;
+            $this->attributes[$pk] = $id;
         }
         return $success;
     }

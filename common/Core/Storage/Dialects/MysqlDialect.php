@@ -66,7 +66,8 @@ class MysqlDialect implements SqlDialectInterface
 
     public function getColumnsSql(string $tableName): string
     {
-        return "SHOW COLUMNS FROM $tableName";
+        $clean = trim($tableName, '` ');
+        return "SHOW COLUMNS FROM `$clean`";
     }
 
     public function getName(): string
@@ -76,15 +77,35 @@ class MysqlDialect implements SqlDialectInterface
 
     public function getCreateTableSql(string $table, string $pk, array $columns, array $indexes = []): string
     {
-        $lines = ["`$pk` INT AUTO_INCREMENT PRIMARY KEY"];
+        $pkTypeSpec = strtolower((string) ($columns[$pk] ?? ''));
+        $isStringPk = ($pk !== 'id' && strpos($pkTypeSpec, 'int') === false && strpos($pkTypeSpec, 'serial') === false)
+            || strpos($pkTypeSpec, 'varchar') !== false
+            || strpos($pkTypeSpec, 'char') !== false
+            || strpos($pkTypeSpec, 'text') !== false
+            || strpos($pkTypeSpec, 'string') !== false;
+
+        $indexedCols = array_flip(array_filter($indexes, 'is_string'));
+        $lines = [$isStringPk ? "`$pk` VARCHAR(64) PRIMARY KEY" : "`$pk` INT AUTO_INCREMENT PRIMARY KEY"];
         foreach ($columns as $name => $type) {
             if ($name === $pk) continue;
-            $sqlType = $this->mapToSqlType($type);
+            $sqlType = $this->mapToSqlType((string) $type);
+            if (isset($indexedCols[$name]) && ($sqlType === 'TEXT' || $sqlType === 'LONGTEXT')) {
+                $sqlType = 'VARCHAR(191)';
+            }
             $lines[] = "`$name` $sqlType";
         }
-        
+
         foreach ($indexes as $col) {
-            $lines[] = "INDEX `idx_$col` (`$col`)";
+            if (!is_string($col) || $col === '') {
+                continue;
+            }
+            $colType = strtoupper((string) ($columns[$col] ?? ''));
+            // Safeguard: indexed VARCHAR(255) on older MySQL or TEXT needs <= 191 prefix in utf8mb4
+            if (strpos($colType, 'TEXT') !== false || (isset($columns[$col]) && preg_match('/varchar\s*\(\s*(\d+)\s*\)/i', (string) $columns[$col], $vm) && (int) $vm[1] > 191)) {
+                $lines[] = "INDEX `idx_$col` (`$col`(191))";
+            } else {
+                $lines[] = "INDEX `idx_$col` (`$col`)";
+            }
         }
 
         return "CREATE TABLE IF NOT EXISTS `$table` (" . implode(', ', $lines) . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
@@ -103,14 +124,21 @@ class MysqlDialect implements SqlDialectInterface
 
     private function mapToSqlType(string $type): string
     {
-        $type = strtolower($type);
-        if (strpos($type, 'int') !== false) return "INT";
-        if (strpos($type, 'bool') !== false) return "TINYINT(1)";
-        if (strpos($type, 'decimal') !== false) return "DECIMAL(12,4)";
-        if (strpos($type, 'float') !== false || strpos($type, 'double') !== false) return "DOUBLE";
-        if (strpos($type, 'text') !== false) return "TEXT";
-        if (strpos($type, 'json') !== false || strpos($type, 'array') !== false) return "JSON";
-        if (strpos($type, 'date') !== false) return "DATETIME";
+        $trimmed = trim($type);
+        $lower = strtolower($trimmed);
+        if (preg_match('/^varchar\s*\(\s*\d+\s*\)$/i', $trimmed)) return strtoupper($trimmed);
+        if (preg_match('/^tinyint\s*\(\s*\d+\s*\)$/i', $trimmed)) return strtoupper($trimmed);
+        if (preg_match('/^decimal\s*\(\s*\d+\s*,\s*\d+\s*\)$/i', $trimmed)) return strtoupper($trimmed);
+        if ($lower === 'datetime' || $lower === 'timestamp' || $lower === 'date' || $lower === 'bigint' || $lower === 'longtext') {
+            return strtoupper($trimmed);
+        }
+        if (strpos($lower, 'int') !== false) return "INT";
+        if (strpos($lower, 'bool') !== false) return "TINYINT(1)";
+        if (strpos($lower, 'decimal') !== false) return "DECIMAL(12,4)";
+        if (strpos($lower, 'float') !== false || strpos($lower, 'double') !== false) return "DOUBLE";
+        if (strpos($lower, 'text') !== false || $lower === 'string') return "TEXT";
+        if (strpos($lower, 'json') !== false || strpos($lower, 'array') !== false) return "JSON";
+        if (strpos($lower, 'date') !== false) return "DATETIME";
         return "VARCHAR(255)";
     }
 }

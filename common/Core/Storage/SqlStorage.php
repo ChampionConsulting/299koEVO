@@ -74,6 +74,7 @@ class SqlStorage implements StorageInterface
                 $sql = $this->dialect->getAlterTableSql($table, $col, $type);
                 $this->driver->execute($sql);
             }
+            $this->columnsCache = null;
         }
 
         // 3. Vérifier les index
@@ -97,10 +98,69 @@ class SqlStorage implements StorageInterface
         return $this->mapping[$key] ?? $key;
     }
 
+    private function q(string $identifier): string
+    {
+        $quote = $this->dialect->getName() === 'pgsql' ? '"' : '`';
+        $clean = trim($identifier, "\"` \t\n\r\0\x0B");
+        return $quote . str_replace($quote, $quote . $quote, $clean) . $quote;
+    }
+
+    private function normalizeValue(mixed $value): mixed
+    {
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE);
+        }
+        return $value;
+    }
+
+    private function ensureColumnsForData(array $data): void
+    {
+        if (!method_exists($this->dialect, 'getAlterTableSql')) {
+            return;
+        }
+        $tableColumns = $this->getTableColumns();
+        if (empty($tableColumns)) {
+            return;
+        }
+        $pkCol = $this->map($this->primaryKey);
+        $added = false;
+        foreach ($data as $key => $value) {
+            if ($key === $this->primaryKey || !is_string($key) || $key === '') {
+                continue;
+            }
+            $col = $this->map($key);
+            if ($col === $pkCol || in_array($col, $tableColumns, true)) {
+                continue;
+            }
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+                continue;
+            }
+            $inferred = 'text';
+            if (is_bool($value) || is_int($value)) {
+                $inferred = 'int';
+            } elseif (is_float($value)) {
+                $inferred = 'float';
+            }
+            try {
+                $this->driver->execute($this->dialect->getAlterTableSql($this->table, $col, $inferred));
+                $tableColumns[] = $col;
+                $added = true;
+            } catch (\Throwable $e) {
+                EmergencyLogger::log("SQL_AUTO_ALTER_ERROR: table={$this->table} col=$col error=" . $e->getMessage());
+            }
+        }
+        if ($added) {
+            $this->columnsCache = null;
+        }
+    }
+
     public function find(string $id): ?array
     {
         $pk = $this->map($this->primaryKey);
-        $sql = "SELECT * FROM {$this->table} WHERE {$pk} = :id LIMIT 1";
+        $sql = "SELECT * FROM {$this->q($this->table)} WHERE {$this->q($pk)} = :id LIMIT 1";
         $results = $this->driver->query($sql, [':id' => $id]);
         return $results[0] ?? null;
     }
@@ -126,7 +186,7 @@ class SqlStorage implements StorageInterface
         $offset = $criteria['offset'] ?? null;
         $selectCols = $criteria['select'] ?? ['*'];
 
-        $cols = implode(', ', array_map(fn($c) => $c === '*' ? '*' : "`$c`", $selectCols));
+        $cols = implode(', ', array_map(fn($c) => $c === '*' ? '*' : $this->q($this->map((string) $c)), $selectCols));
 
         $where = [];
         $params = [];
@@ -134,7 +194,7 @@ class SqlStorage implements StorageInterface
 
         foreach ($conditions as $k => $condition) {
             if (is_array($condition) && isset($condition['column'], $condition['operator']) && array_key_exists('value', $condition)) {
-                $col = $this->map($condition['column']);
+                $col = $this->q($this->map($condition['column']));
                 $op = $condition['operator'];
                 $opUpper = strtoupper(trim((string) $op));
                 $val = $condition['value'];
@@ -166,7 +226,7 @@ class SqlStorage implements StorageInterface
                 // Fallback legacy behavior (associative array)
                 if (is_numeric($k) && !is_array($condition))
                     continue;
-                $key = is_numeric($k) ? $k : $this->map($k);
+                $key = $this->q(is_numeric($k) ? (string) $k : $this->map((string) $k));
                 $val = $condition;
 
                 if (is_array($val))
@@ -182,7 +242,10 @@ class SqlStorage implements StorageInterface
 
         $orderBy = "";
         if (!empty($order)) {
-            $parts = array_map(fn($o) => "{$o['key']} {$o['direction']}", $order);
+            $parts = array_map(function ($o) {
+                $dir = strtoupper((string) ($o['direction'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+                return $this->q($this->map((string) $o['key'])) . " $dir";
+            }, $order);
             $orderBy = " ORDER BY " . implode(", ", $parts);
         }
 
@@ -191,7 +254,7 @@ class SqlStorage implements StorageInterface
             $limitClause = $this->dialect->limit((int) $limit, (int) ($offset ?? 0));
         }
 
-        $sql = "SELECT {$cols} FROM {$this->table}{$whereClause}{$orderBy}{$limitClause}";
+        $sql = "SELECT {$cols} FROM {$this->q($this->table)}{$whereClause}{$orderBy}{$limitClause}";
 
         $results = $this->driver->query($sql, $params);
         EmergencyLogger::log("SQL_RESULT: table={$this->table} count=" . count($results));
@@ -209,13 +272,15 @@ class SqlStorage implements StorageInterface
             return true;
         }
 
-        $exists = $this->find($id);
+        $exists = ($id !== '') ? $this->find($id) : null;
+        $this->ensureColumnsForData($data);
         $tableColumns = $this->getTableColumns();
 
         if ($exists) {
             $sets = [];
-            $params = [':id' => $id];
+            $params = [];
             $pk = $this->map($this->primaryKey);
+            $pIdx = 0;
 
             foreach ($data as $key => $value) {
                 if ($key === $this->primaryKey)
@@ -224,10 +289,10 @@ class SqlStorage implements StorageInterface
                 $col = $this->map($key);
 
                 // On n'enregistre que si la colonne existe en DB
-                if (in_array($col, $tableColumns)) {
-                    $p = "p_" . $key;
-                    $sets[] = "`$col` = :$p";
-                    $params[":$p"] = $value;
+                if (in_array($col, $tableColumns, true)) {
+                    $p = ":p_" . ($pIdx++);
+                    $sets[] = "{$this->q($col)} = $p";
+                    $params[$p] = $this->normalizeValue($value);
                 }
             }
 
@@ -235,41 +300,40 @@ class SqlStorage implements StorageInterface
                 return true;
             }
 
-            $sql = "UPDATE `{$this->table}` SET " . implode(", ", $sets) . " WHERE `{$pk}` = :where_id";
+            $sql = "UPDATE {$this->q($this->table)} SET " . implode(", ", $sets) . " WHERE {$this->q($pk)} = :where_id";
             $params[':where_id'] = $id;
-            unset($params[':id']);
 
-            $success = $this->driver->execute($sql, $params);
-            return $success;
+            return $this->driver->execute($sql, $params);
         } else {
             $data[$this->primaryKey] = $data[$this->primaryKey] ?? $id;
             $fields = [];
             $placeholders = [];
             $params = [];
+            $pIdx = 0;
 
             foreach ($data as $k => $v) {
-                $col = ($k === $this->primaryKey) ? $this->map($this->primaryKey) : $this->map($k);
+                $col = ($k === $this->primaryKey) ? $this->map($this->primaryKey) : $this->map((string) $k);
 
                 // Skip PK if empty to allow AUTO_INCREMENT
                 if ($k === $this->primaryKey && ($v === '' || $v === null)) {
                     continue;
                 }
 
-                if (in_array($col, $tableColumns)) {
-                    $fields[] = $col;
-                    $placeholders[] = ":$k";
-                    $params[":$k"] = $v;
+                if (in_array($col, $tableColumns, true)) {
+                    $p = ":i_" . ($pIdx++);
+                    $fields[] = $this->q($col);
+                    $placeholders[] = $p;
+                    $params[$p] = $this->normalizeValue($v);
                 }
             }
 
             if (empty($fields))
                 return true;
 
-            $sql = "INSERT INTO {$this->table} (" . implode(", ", $fields) . ") VALUES (" . implode(", ", $placeholders) . ")";
+            $sql = "INSERT INTO {$this->q($this->table)} (" . implode(", ", $fields) . ") VALUES (" . implode(", ", $placeholders) . ")";
 
             EmergencyLogger::log("SQL_SAVE_INSERT: table={$this->table} id=$id");
-            $success = $this->driver->execute($sql, $params);
-            return $success;
+            return $this->driver->execute($sql, $params);
         }
     }
 
@@ -299,7 +363,8 @@ class SqlStorage implements StorageInterface
 
     public function delete(string $id): bool
     {
-        $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
+        $pk = $this->map($this->primaryKey);
+        $sql = "DELETE FROM {$this->q($this->table)} WHERE {$this->q($pk)} = :id";
         return $this->driver->execute($sql, [':id' => $id]);
     }
 
@@ -326,7 +391,7 @@ class SqlStorage implements StorageInterface
 
         foreach ($conditions as $k => $condition) {
             if (is_array($condition) && isset($condition['column'], $condition['operator']) && array_key_exists('value', $condition)) {
-                $col = $this->map($condition['column']);
+                $col = $this->q($this->map($condition['column']));
                 $op  = $condition['operator'];
                 $opUpper = strtoupper(trim((string) $op));
                 $val = $condition['value'];
@@ -357,7 +422,7 @@ class SqlStorage implements StorageInterface
         }
 
         $whereClause = !empty($where) ? " WHERE " . implode(" AND ", $where) : "";
-        $sql = "SELECT COUNT(*) as cnt FROM {$this->table}{$whereClause}";
+        $sql = "SELECT COUNT(*) as cnt FROM {$this->q($this->table)}{$whereClause}";
         $results = $this->driver->query($sql, $params);
         return (int)($results[0]['cnt'] ?? 0);
     }
