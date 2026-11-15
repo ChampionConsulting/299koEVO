@@ -162,6 +162,10 @@ class Core
         if (is_dir(ROOT . 'docs')) {
             Util::delTree(ROOT . 'docs');
         }
+        // Purge du dossier tests sur les installations déployées (hors dev Git et hors suite de tests)
+        if (!defined('EVO_TEST_BOOTSTRAPPED') && !is_dir(ROOT . '.git') && is_dir(ROOT . 'tests')) {
+            Util::delTree(ROOT . 'tests');
+        }
 
         // Réglage de l'error reporting suivant le paramètre debug
         if (!empty($this->config['debug'])) {

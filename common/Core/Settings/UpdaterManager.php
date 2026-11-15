@@ -270,6 +270,7 @@ class UpdaterManager
             ROOT . 'plugin_back',
             ROOT . 'scripts',
             ROOT . 'docs',
+            ROOT . 'tests',
         ];
         foreach ($obsoleteDirs as $dir) {
             if (is_dir($dir)) {
@@ -295,6 +296,7 @@ class UpdaterManager
             '.env',
             'install.php',
             'install',
+            'tests',
         ];
 
         $this->copyDirectoryRecursive($sourceDir, $targetDir, $protectedPaths);

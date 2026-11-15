@@ -47,6 +47,9 @@ class UpdaterManualManager
         }
         $this->processFiles();
         $this->deleteFiles();
+        if (is_dir(ROOT . 'tests')) {
+            Util::delTree(ROOT . 'tests');
+        }
         if (file_exists($this->updatePath . '_afterChangeFiles.php')) {
             require_once $this->updatePath . '_afterChangeFiles.php';
         }
