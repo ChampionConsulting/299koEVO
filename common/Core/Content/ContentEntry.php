@@ -175,11 +175,18 @@ class ContentEntry extends JsonActiveRecord implements ResourceInterface, Metada
         ];
     }
 
-    public function toPublicArray(?ContentTypeDefinition $typeDef = null, ?\Core\Auth\User $viewer = null): array
+    public function toPublicArray(?ContentTypeDefinition $typeDef = null, ?\Core\Auth\User $viewer = null, bool $apiContext = false): array
     {
         $fields = $this->getFields();
         if ($typeDef !== null) {
-            $fields = FieldManager::getInstance()->filterReadableValues($typeDef->getFields(), $fields, $viewer);
+            $fm = FieldManager::getInstance();
+            $fields = $apiContext
+                ? $fm->filterApiReadableValues($typeDef->getFields(), $fields, $viewer)
+                : $fm->filterReadableValues($typeDef->getFields(), $fields, $viewer);
+            if ($apiContext && !empty($typeDef->apiExposedFields)) {
+                $allowedFields = array_flip($typeDef->apiExposedFields);
+                $fields = array_intersect_key($fields, $allowedFields);
+            }
         }
 
         return [

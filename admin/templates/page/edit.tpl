@@ -536,6 +536,100 @@ document.addEventListener('DOMContentLoaded', function() {
         blocksInput.value = JSON.stringify(blocks);
     }
 
+    function mkInput(labelTxt, val, onChg, isArea) {
+        const wrap = document.createElement('p');
+        wrap.style.margin = '.35rem 0';
+        const lbl = document.createElement('label');
+        lbl.textContent = labelTxt;
+        lbl.style.fontWeight = '600';
+        const el = document.createElement(isArea ? 'textarea' : 'input');
+        if (!isArea) el.type = 'text';
+        else el.rows = 3;
+        el.style.width = '100%';
+        el.value = val ?? '';
+        el.oninput = () => onChg(el.value);
+        wrap.appendChild(lbl);
+        wrap.appendChild(document.createElement('br'));
+        wrap.appendChild(el);
+        return wrap;
+    }
+
+    function renderTypedFields(blk, body) {
+        const d = blk.data = blk.data || {};
+        if (blk.type === 'text') {
+            body.appendChild(mkInput('Titre / Sous-titre', d.heading || '', v => { d.heading = v; sync(); }));
+            body.appendChild(mkInput('Contenu HTML / Texte', d.content || '', v => { d.content = v; sync(); }, true));
+        } else if (blk.type === 'image') {
+            body.appendChild(mkInput('URL ou chemin image (src)', d.src || '', v => { d.src = v; sync(); }));
+            body.appendChild(mkInput('Texte alternatif (alt)', d.alt || '', v => { d.alt = v; sync(); }));
+            body.appendChild(mkInput('Légende', d.caption || '', v => { d.caption = v; sync(); }));
+            body.appendChild(mkInput('Lien cible (optionnel)', d.link || '', v => { d.link = v; sync(); }));
+        } else if (blk.type === 'gallery') {
+            const existing = Array.isArray(d.images)
+                ? d.images.map(img => typeof img === 'string' ? img : (img.src || '')).filter(Boolean).join('\n')
+                : '';
+            body.appendChild(mkInput('Images (une URL/chemin par ligne)', existing, v => {
+                d.images = v.split('\n').map(s => s.trim()).filter(Boolean).map(src => ({ src, alt: '' }));
+                sync();
+            }, true));
+            body.appendChild(mkInput('Colonnes', String(d.columns ?? 3), v => { d.columns = parseInt(v, 10) || 3; sync(); }));
+        } else if (blk.type === 'video') {
+            body.appendChild(mkInput('URL Vidéo (YouTube / Vimeo / MP4)', d.url || '', v => { d.url = v; sync(); }));
+            body.appendChild(mkInput('Titre', d.title || '', v => { d.title = v; sync(); }));
+        } else if (blk.type === 'button') {
+            body.appendChild(mkInput('Libellé du bouton', d.label || '', v => { d.label = v; sync(); }));
+            body.appendChild(mkInput('URL de destination', d.url || '', v => { d.url = v; sync(); }));
+            body.appendChild(mkInput('Variante CSS (primary, secondary...)', d.variant || 'primary', v => { d.variant = v; sync(); }));
+        } else if (blk.type === 'columns') {
+            const cols = Array.isArray(d.columns) ? d.columns : ['', ''];
+            d.columns = cols;
+            body.appendChild(mkInput('Nombre de colonnes (2 ou 3)', String(cols.length || 2), v => {
+                const n = Math.max(1, Math.min(4, parseInt(v, 10) || 2));
+                while (d.columns.length < n) d.columns.push('');
+                if (d.columns.length > n) d.columns = d.columns.slice(0, n);
+                sync();
+                renderBlocks();
+            }));
+            d.columns.forEach((colVal, cIdx) => {
+                const txt = typeof colVal === 'string' ? colVal : (colVal && colVal.content ? colVal.content : JSON.stringify(colVal));
+                body.appendChild(mkInput('Colonne ' + (cIdx + 1) + ' (HTML / Texte)', txt, v => {
+                    d.columns[cIdx] = v;
+                    sync();
+                }, true));
+            });
+        } else if (blk.type === 'quote') {
+            body.appendChild(mkInput('Citation', d.text || '', v => { d.text = v; sync(); }, true));
+            body.appendChild(mkInput('Auteur', d.author || '', v => { d.author = v; sync(); }));
+            body.appendChild(mkInput('Source', d.source || '', v => { d.source = v; sync(); }));
+        } else if (blk.type === 'list') {
+            body.appendChild(mkInput('Style (unordered ou ordered)', d.style || 'unordered', v => { d.style = v; sync(); }));
+            body.appendChild(mkInput('Éléments (un par ligne)', Array.isArray(d.items) ? d.items.join('\n') : '', v => {
+                d.items = v.split('\n').map(s => s.trim()).filter(Boolean);
+                sync();
+            }, true));
+        } else if (blk.type === 'plugin_content') {
+            body.appendChild(mkInput('Slug du plugin cible (blog, agenda, docs...)', d.plugin || '', v => { d.plugin = v; sync(); }));
+            body.appendChild(mkInput('Mode (latest, list, single)', d.mode || 'latest', v => { d.mode = v; sync(); }));
+            body.appendChild(mkInput('Limite d’éléments', String(d.limit ?? 5), v => { d.limit = parseInt(v, 10) || 5; sync(); }));
+        } else {
+            const area = document.createElement('textarea');
+            area.rows = 4;
+            area.style.width = '100%';
+            area.style.fontFamily = 'monospace';
+            area.value = JSON.stringify(d, null, 2);
+            area.onchange = () => {
+                try {
+                    blk.data = JSON.parse(area.value);
+                    area.style.borderColor = '#d1d5db';
+                    sync();
+                } catch (e) {
+                    area.style.borderColor = '#dc2626';
+                }
+            };
+            body.appendChild(area);
+        }
+    }
+
     function renderBlocks() {
         blocksList.innerHTML = '';
         if (blocks.length === 0) {
@@ -570,21 +664,9 @@ document.addEventListener('DOMContentLoaded', function() {
             head.appendChild(btns);
             card.appendChild(head);
 
-            const area = document.createElement('textarea');
-            area.rows = 4;
-            area.style.width = '100%';
-            area.style.fontFamily = 'monospace';
-            area.value = JSON.stringify(blk.data || {}, null, 2);
-            area.onchange = () => {
-                try {
-                    blk.data = JSON.parse(area.value);
-                    area.style.borderColor = '#d1d5db';
-                    sync();
-                } catch (e) {
-                    area.style.borderColor = '#dc2626';
-                }
-            };
-            card.appendChild(area);
+            const body = document.createElement('div');
+            renderTypedFields(blk, body);
+            card.appendChild(body);
             blocksList.appendChild(card);
         });
         sync();

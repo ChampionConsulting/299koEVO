@@ -93,8 +93,12 @@ class Page
     public function del($obj)
     {
         if ($obj->getIsHomepage() < 1 && $this->count() > 1) {
+            $deletedId = (string) $obj->getId();
             $success = $obj->delete();
             if ($success) {
+                if (class_exists('\Core\Translation\TranslationManager')) {
+                    \Core\Translation\TranslationManager::getInstance()->removeEntityTranslations('page', $deletedId);
+                }
                 $this->items = $this->loadPages();
             }
             return $success;
@@ -186,6 +190,35 @@ class Page
             if ($pageItem->getId() == $id) return $pageItem;
         }
         return false;
+    }
+
+    public function findBySlug(string $slug, ?string $locale = null): ?PageItem
+    {
+        $targetSlug = \Utils\Util::strToUrl(trim($slug));
+        if ($targetSlug === '') {
+            return null;
+        }
+        $normLoc = $locale !== null ? strtolower(trim($locale)) : null;
+
+        foreach ($this->items as $pageItem) {
+            if (!$pageItem instanceof PageItem) {
+                continue;
+            }
+            $itemSlug = method_exists($pageItem, 'getSlug') && trim((string) $pageItem->getSlug()) !== ''
+                ? \Utils\Util::strToUrl((string) $pageItem->getSlug())
+                : \Utils\Util::strToUrl((string) $pageItem->getName());
+            if ($itemSlug !== $targetSlug) {
+                continue;
+            }
+            if ($normLoc !== null) {
+                $itemLocale = strtolower(trim((string) $pageItem->getLocale()));
+                if ($itemLocale !== '' && $itemLocale !== $normLoc) {
+                    continue;
+                }
+            }
+            return $pageItem;
+        }
+        return null;
     }
 
     public function createHomepage()

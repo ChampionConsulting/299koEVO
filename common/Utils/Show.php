@@ -424,6 +424,7 @@ class Show
         $categoryByModule = [
             // Contenu
             'page'          => 'contenu',
+            'content'       => 'contenu',
             'menu'          => 'contenu',
             'menus'         => 'contenu',
             'blog'          => 'contenu',
@@ -532,6 +533,7 @@ class Show
             $core->media()->getAdminNavigationEntries(),
             $core->auth()->getAdminNavEntries(),
             $core->pages()->getAdminNavigationEntries(),
+            [['name' => 'content', 'label' => 'Types de contenus', 'icon' => 'fa-solid fa-cubes']],
             $core->menus()->getAdminNavigationEntries(),
         ];
         foreach ($coreServices as $entries) {

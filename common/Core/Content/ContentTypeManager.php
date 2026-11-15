@@ -22,6 +22,9 @@ class ContentTypeManager
     /** @var array<string,ContentTypeDefinition> */
     private array $types = [];
 
+    /** @var array<string,bool> */
+    private array $persistedTypeIds = [];
+
     private bool $hooksDispatched = false;
 
     private function __construct()
@@ -35,6 +38,11 @@ class ContentTypeManager
             self::$instance = new self();
         }
         return self::$instance;
+    }
+
+    public static function reset(): void
+    {
+        self::$instance = null;
     }
 
     /**
@@ -137,11 +145,169 @@ class ContentTypeManager
     }
 
     /**
+     * Contrôle anti-IDOR : autorisé si super-admin, auteur propriétaire,
+     * détenteur du droit de publication du type ou de la permission `content.edit_others`.
+     */
+    public function isOwnerOrPrivileged(ContentTypeDefinition $type, ContentEntry $entry, ?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+        $authorId = (string) ($entry->attributes['author_id'] ?? '');
+        if ($authorId !== '' && $authorId === (string) $user->getId()) {
+            return true;
+        }
+        if ($this->canPerform($type->id, 'publish', $user, $entry)) {
+            return true;
+        }
+        $evaluator = AccessPolicyEvaluator::getInstance();
+        $ctx = new ConditionContext($user, ['content_type' => $type->id, 'entry_id' => $entry->getId()]);
+        return $evaluator->canAccess(
+            new GenericResource(
+                'content_type:' . $type->id . ':edit_others',
+                [['type' => 'permission', 'value' => 'content.edit_others']],
+                ['PUB' => false]
+            ),
+            $ctx
+        );
+    }
+
+    public function hasSlugCollision(string $typeId, string $slug, string $locale, int|string|null $excludeId = null): bool
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return false;
+        }
+        $normLoc = strtolower(trim($locale));
+        $rows = ContentEntry::queryBuilder()
+            ->where('content_type', '=', $typeId)
+            ->where('slug', '=', $slug)
+            ->get();
+
+        foreach ($rows as $row) {
+            if ($excludeId !== null && (string) $row->getId() === (string) $excludeId) {
+                continue;
+            }
+            if (strtolower($row->getLocale()) === $normLoc) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function findBySlug(string $typeId, string $slug, ?string $locale = null, ?User $user = null): ?ContentEntry
+    {
+        $type = $this->get($typeId);
+        if ($type === null || trim($slug) === '') {
+            return null;
+        }
+        $rows = ContentEntry::queryBuilder()
+            ->where('content_type', '=', $typeId)
+            ->where('slug', '=', trim($slug))
+            ->get();
+
+        $normLoc = $locale !== null ? strtolower(trim($locale)) : null;
+        foreach ($rows as $entry) {
+            if ($normLoc !== null && strtolower($entry->getLocale()) !== $normLoc) {
+                continue;
+            }
+            if ($entry->getStatus() !== 'published') {
+                if (!$this->isOwnerOrPrivileged($type, $entry, $user)) {
+                    continue;
+                }
+            } elseif (!$this->canPerform($typeId, 'view', $user, $entry)) {
+                continue;
+            }
+            return $entry;
+        }
+        return null;
+    }
+
+    public function getCustomTypesFile(): string
+    {
+        return DATA_CORE_CONTENT . 'content_types.json';
+    }
+
+    public function loadPersistedTypes(): void
+    {
+        $file = $this->getCustomTypesFile();
+        if (!is_file($file)) {
+            return;
+        }
+        $decoded = json_decode((string) file_get_contents($file), true);
+        if (!is_array($decoded)) {
+            return;
+        }
+        foreach ($decoded as $item) {
+            if (!is_array($item) || empty($item['id'])) {
+                continue;
+            }
+            $def = ContentTypeDefinition::fromArray($item);
+            $this->types[$def->id] = $def;
+            $this->persistedTypeIds[$def->id] = true;
+        }
+    }
+
+    public function getPersistedTypes(): array
+    {
+        $file = $this->getCustomTypesFile();
+        if (!is_file($file)) {
+            return [];
+        }
+        $decoded = json_decode((string) file_get_contents($file), true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    public function isPersistedType(string $typeId): bool
+    {
+        $this->ensureHookTypesLoaded();
+        return !empty($this->persistedTypeIds[$typeId]);
+    }
+
+    public function saveCustomType(array $config): ContentTypeDefinition
+    {
+        $this->ensureHookTypesLoaded();
+        $def = ContentTypeDefinition::fromArray($config);
+        $all = $this->getPersistedTypes();
+        $all[$def->id] = $def->toArray();
+
+        $dir = dirname($this->getCustomTypesFile());
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        file_put_contents($this->getCustomTypesFile(), json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $this->types[$def->id] = $def;
+        $this->persistedTypeIds[$def->id] = true;
+        return $def;
+    }
+
+    public function deleteCustomType(string $typeId): bool
+    {
+        $this->ensureHookTypesLoaded();
+        if ($typeId === 'page') {
+            return false;
+        }
+        $all = $this->getPersistedTypes();
+        $existed = isset($all[$typeId]);
+        unset($all[$typeId]);
+        $dir = dirname($this->getCustomTypesFile());
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        file_put_contents($this->getCustomTypesFile(), json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        unset($this->types[$typeId], $this->persistedTypeIds[$typeId]);
+        return $existed;
+    }
+
+    /**
      * Crée et valide côté serveur une nouvelle entrée de type de contenu.
      *
      * @return array{success:bool,entry:?ContentEntry,errors:array<string,string>,httpCode?:int}
      */
-    public function createEntry(string $typeId, array $data, ?User $user = null): array
+    public function createEntry(string $typeId, array $data, ?User $user = null, bool $apiContext = false): array
     {
         $type = $this->get($typeId);
         if ($type === null) {
@@ -170,7 +336,7 @@ class ContentTypeManager
         }
 
         $fieldInput = isset($data['fields']) && is_array($data['fields']) ? $data['fields'] : $this->extractFieldInput($type, $data);
-        $validation = FieldManager::getInstance()->validatePayload($type->getFields(), $fieldInput, $actor, false, []);
+        $validation = FieldManager::getInstance()->validatePayload($type->getFields(), $fieldInput, $actor, false, [], $apiContext);
         $errors = $validation['errors'];
 
         if (isset($type->validation['callback']) && is_callable($type->validation['callback'])) {
@@ -197,10 +363,15 @@ class ContentTypeManager
         $slug = trim((string) ($data['slug'] ?? ''));
         if ($slug === '' && $title !== '') {
             $slug = Util::strToUrl($title);
+        } elseif ($slug !== '') {
+            $slug = Util::strToUrl($slug);
         }
 
         $now = date('Y-m-d H:i:s');
-        $locale = (string) ($data['locale'] ?? Core::getInstance()->getConfigVal('siteLang') ?: 'fr');
+        $locale = strtolower(trim((string) ($data['locale'] ?? Core::getInstance()->getConfigVal('siteLang') ?: 'fr')));
+        if ($slug !== '' && $this->hasSlugCollision($typeId, $slug, $locale)) {
+            return ['success' => false, 'entry' => null, 'errors' => ['slug' => "Ce slug est déjà utilisé pour la langue « {$locale} »."], 'httpCode' => 422];
+        }
         $entry = new ContentEntry([
             'content_type' => $typeId,
             'target_id' => (string) ($data['target_id'] ?? ''),
@@ -232,7 +403,7 @@ class ContentTypeManager
      *
      * @return array{success:bool,entry:?ContentEntry,errors:array<string,string>,httpCode?:int}
      */
-    public function updateEntry(string $typeId, int|string $id, array $data, ?User $user = null, bool $partial = false): array
+    public function updateEntry(string $typeId, int|string $id, array $data, ?User $user = null, bool $partial = false, bool $apiContext = false): array
     {
         $type = $this->get($typeId);
         if ($type === null) {
@@ -245,9 +416,10 @@ class ContentTypeManager
         }
 
         $actor = $user ?? UsersManager::getCurrentUser();
-        if (!$this->canPerform($typeId, 'edit', $actor, $entry)) {
+        if (!$this->canPerform($typeId, 'edit', $actor, $entry) || !$this->isOwnerOrPrivileged($type, $entry, $actor)) {
             return [
                 'success' => false,
+                'forbidden' => true,
                 'entry' => null,
                 'errors' => ['permission' => "Permission insuffisante pour modifier ce contenu."],
                 'httpCode' => $actor === null ? 401 : 403,
@@ -261,6 +433,7 @@ class ContentTypeManager
             if (!$wf->canTransition($currentStatus, $targetStatus, $actor, $type->permissions['publish'] ?? 'content.publish')) {
                 return [
                     'success' => false,
+                    'forbidden' => true,
                     'entry' => null,
                     'errors' => ['status' => "Transition de statut « {$currentStatus} » → « {$targetStatus} » non autorisée."],
                     'httpCode' => 403,
@@ -269,7 +442,7 @@ class ContentTypeManager
         }
 
         $fieldInput = isset($data['fields']) && is_array($data['fields']) ? $data['fields'] : $this->extractFieldInput($type, $data);
-        $validation = FieldManager::getInstance()->validatePayload($type->getFields(), $fieldInput, $actor, $partial, $entry->getFields());
+        $validation = FieldManager::getInstance()->validatePayload($type->getFields(), $fieldInput, $actor, $partial, $entry->getFields(), $apiContext);
         $errors = $validation['errors'];
 
         if (isset($type->validation['callback']) && is_callable($type->validation['callback'])) {
@@ -297,6 +470,18 @@ class ContentTypeManager
             }
         }
 
+        $nextSlug = array_key_exists('slug', $data) && trim((string) $data['slug']) !== ''
+            ? Util::strToUrl((string) $data['slug'])
+            : $entry->getSlug();
+        $nextLocale = array_key_exists('locale', $data)
+            ? strtolower(trim((string) $data['locale']))
+            : $entry->getLocale();
+        if ((array_key_exists('slug', $data) || array_key_exists('locale', $data))
+            && $nextSlug !== ''
+            && $this->hasSlugCollision($typeId, $nextSlug, $nextLocale, $entry->getId())) {
+            return ['success' => false, 'entry' => null, 'errors' => ['slug' => "Ce slug est déjà utilisé pour la langue « {$nextLocale} »."], 'httpCode' => 422];
+        }
+
         $entry->setFields($validation['values']);
         $entry->setBlocks($blocks);
         $entry->attributes['status'] = $targetStatus;
@@ -305,12 +490,8 @@ class ContentTypeManager
         } elseif ($entry->getTitle() === '') {
             $entry->attributes['title'] = $this->resolveTitle($type, $data, $validation['values']);
         }
-        if (array_key_exists('slug', $data)) {
-            $entry->attributes['slug'] = trim((string) $data['slug']) !== '' ? Util::strToUrl((string) $data['slug']) : $entry->getSlug();
-        }
-        if (array_key_exists('locale', $data)) {
-            $entry->attributes['locale'] = (string) $data['locale'];
-        }
+        $entry->attributes['slug'] = $nextSlug;
+        $entry->attributes['locale'] = $nextLocale;
         if (array_key_exists('translation_group', $data)) {
             $entry->attributes['translation_group'] = (string) $data['translation_group'];
         }
@@ -338,8 +519,7 @@ class ContentTypeManager
             return null;
         }
         if ($entry->getStatus() !== 'published') {
-            $canSeeDraft = $this->canPerform($typeId, 'edit', $user, $entry) || $this->canPerform($typeId, 'publish', $user, $entry);
-            return $canSeeDraft ? $entry : null;
+            return $this->isOwnerOrPrivileged($type, $entry, $user) ? $entry : null;
         }
         if (!$this->canPerform($typeId, 'view', $user, $entry)) {
             return null;
@@ -359,13 +539,16 @@ class ContentTypeManager
         }
 
         $actor = $user ?? UsersManager::getCurrentUser();
-        if (!$this->canPerform($typeId, 'delete', $actor, $entry)) {
+        if (!$this->canPerform($typeId, 'delete', $actor, $entry) || !$this->isOwnerOrPrivileged($type, $entry, $actor)) {
             return false;
         }
 
         Core::getInstance()->callHook('content:before-delete', ['type' => $type, 'entry' => $entry]);
         $deleted = $entry->delete();
         if ($deleted) {
+            if (class_exists('\Core\Translation\TranslationManager')) {
+                \Core\Translation\TranslationManager::getInstance()->removeEntityTranslations('content:' . $typeId, (string) $id);
+            }
             Core::getInstance()->callHook('content:after-delete', ['type' => $type, 'id' => $id]);
         }
         return $deleted;
@@ -416,11 +599,10 @@ class ContentTypeManager
         /** @var ContentEntry[] $entries */
         $entries = $qb->get();
 
-        // Sécurité ABAC/statut : masquer les non-publiés à un visiteur sans permission edit/publish
-        $canSeeNonPublished = $this->canPerform($typeId, 'edit', $user) || $this->canPerform($typeId, 'publish', $user);
+        // Sécurité ABAC/statut/propriété : masquer les non-publiés à tout utilisateur non auteur et non privilégié
         $filtered = [];
         foreach ($entries as $entry) {
-            if ($entry->getStatus() !== 'published' && !$canSeeNonPublished) {
+            if ($entry->getStatus() !== 'published' && !$this->isOwnerOrPrivileged($type, $entry, $user)) {
                 continue;
             }
             if (!empty($customFilters) && !$this->matchesCustomFilters($entry, $customFilters)) {
@@ -628,6 +810,7 @@ class ContentTypeManager
             return;
         }
         $this->hooksDispatched = true;
+        $this->loadPersistedTypes();
         if (class_exists('\Core\Core')) {
             Core::getInstance()->callHook('content:register-types', $this);
         }

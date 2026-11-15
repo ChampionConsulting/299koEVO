@@ -66,6 +66,13 @@ function pageEndFrontHead() {
             $tm = \Core\Translation\TranslationManager::getInstance();
             $pageService = new Page();
             $siteUrl = rtrim((string) $core->getConfigVal('siteUrl'), '/');
+            $activeLoc = method_exists($core, 'getLocale') ? (string) $core->getLocale() : ($pageItem->getLocale() ?: $tm->getDefaultLocale());
+            $currentRelPath = str_replace($siteUrl, '', $pageService->makeUrl($pageItem));
+            $canonicalUrl = $siteUrl . $tm->buildLocalizedUrl($currentRelPath ?: '/', $pageItem->getLocale() ?: $activeLoc);
+            $canonicalTag = $tm->renderCanonicalTag($canonicalUrl);
+            if ($canonicalTag !== '') {
+                echo "\n" . $canonicalTag;
+            }
             $hreflangHtml = $tm->renderHreflangTags('page', (string) $pageItem->getId(), static function (string $loc, string $targetId) use ($pageService, $tm, $siteUrl): string {
                 $targetPage = $pageService->create($targetId);
                 if (!$targetPage instanceof PageItem) {

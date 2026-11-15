@@ -199,7 +199,7 @@ $phase1Tests = [
             'fields_data' => 'text',
             'blocks_data' => 'text',
         ], ['content_type']);
-        EvoTestRunner::assertContains('CREATE TABLE `core_content_entries`', $ddl, 'DDL MySQL génère la table core_content_entries');
+        EvoTestRunner::assertContains('CREATE TABLE IF NOT EXISTS `core_content_entries`', $ddl, 'DDL MySQL génère la table core_content_entries');
         EvoTestRunner::assertContains('`fields_data` TEXT', $ddl, 'Colonne fields_data en TEXT pour compatibilité MySQL');
     },
 ];

@@ -37,6 +37,8 @@ class FieldDefinition
     public int $order = 0;
     public string|array|null $readPermission = null;
     public string|array|null $writePermission = null;
+    public bool $apiReadable = true;
+    public bool $apiWritable = true;
     public string $placeholder = '';
     public string $help = '';
 
@@ -53,7 +55,9 @@ class FieldDefinition
         string|array|null $readPermission = null,
         string|array|null $writePermission = null,
         string $placeholder = '',
-        string $help = ''
+        string $help = '',
+        bool $apiReadable = true,
+        bool $apiWritable = true
     ) {
         $this->name = trim($name);
         $this->label = trim($label) !== '' ? trim($label) : $this->name;
@@ -69,6 +73,8 @@ class FieldDefinition
         $this->writePermission = $writePermission;
         $this->placeholder = $placeholder;
         $this->help = $help;
+        $this->apiReadable = $apiReadable;
+        $this->apiWritable = $apiWritable;
     }
 
     public static function fromArray(array $definition): self
@@ -107,7 +113,9 @@ class FieldDefinition
             $readPermission,
             $writePermission,
             (string) ($definition['placeholder'] ?? ''),
-            (string) ($definition['help'] ?? $definition['description'] ?? '')
+            (string) ($definition['help'] ?? $definition['description'] ?? ''),
+            (bool) ($definition['api_readable'] ?? $definition['apiReadable'] ?? true),
+            (bool) ($definition['api_writable'] ?? $definition['apiWritable'] ?? true)
         );
     }
 
@@ -133,6 +141,8 @@ class FieldDefinition
             'order' => $this->order,
             'readPermission' => $this->readPermission,
             'writePermission' => $this->writePermission,
+            'api_readable' => $this->apiReadable,
+            'api_writable' => $this->apiWritable,
             'placeholder' => $this->placeholder,
             'help' => $this->help,
         ];

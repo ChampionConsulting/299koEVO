@@ -75,7 +75,7 @@ class PgsqlDialect implements SqlDialectInterface
             $lines[] = "\"$name\" $sqlType";
         }
 
-        return "CREATE TABLE \"$table\" (" . implode(', ', $lines) . ")";
+        return "CREATE TABLE IF NOT EXISTS \"$table\" (" . implode(', ', $lines) . ")";
     }
 
     public function getAlterTableSql(string $table, string $column, string $type): string
@@ -86,7 +86,7 @@ class PgsqlDialect implements SqlDialectInterface
 
     public function getIndexSql(string $table, string $column): string
     {
-        return "CREATE INDEX \"idx_{$table}_{$column}\" ON \"$table\"(\"$column\")";
+        return "CREATE INDEX IF NOT EXISTS \"idx_{$table}_{$column}\" ON \"$table\"(\"$column\")";
     }
 
     private function mapToSqlType(string $type): string
@@ -94,6 +94,8 @@ class PgsqlDialect implements SqlDialectInterface
         $type = strtolower($type);
         if (strpos($type, 'int') !== false) return "INTEGER";
         if (strpos($type, 'bool') !== false) return "BOOLEAN";
+        if (strpos($type, 'decimal') !== false) return "NUMERIC(12,4)";
+        if (strpos($type, 'float') !== false || strpos($type, 'double') !== false) return "DOUBLE PRECISION";
         if (strpos($type, 'json') !== false || strpos($type, 'array') !== false) return "JSONB";
         if (strpos($type, 'date') !== false) return "TIMESTAMP";
         return "TEXT";

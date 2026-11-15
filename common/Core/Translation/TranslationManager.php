@@ -463,4 +463,63 @@ class TranslationManager
 
         return implode("\n", $tags);
     }
+
+    public function renderCanonicalTag(string $url): string
+    {
+        $clean = trim($url);
+        if ($clean === '') {
+            return '';
+        }
+        return '<link rel="canonical" href="' . htmlspecialchars($clean, ENT_QUOTES, 'UTF-8') . '" />';
+    }
+
+    /**
+     * Supprime le(s) lien(s) de traduction d'une entité et réassigne `is_default` si la version par défaut est supprimée.
+     */
+    public function removeEntityTranslations(string $entityType, int|string $entityId): void
+    {
+        $idStr = (string) $entityId;
+        if ($idStr === '') {
+            return;
+        }
+        /** @var TranslationLink[] $links */
+        $links = TranslationLink::queryBuilder()
+            ->where('entity_type', '=', $entityType)
+            ->where('entity_id', '=', $idStr)
+            ->get();
+
+        if (empty($links)) {
+            return;
+        }
+
+        $affectedGroups = [];
+        foreach ($links as $link) {
+            $group = $link->getGroup();
+            $wasDefault = $link->isDefault();
+            $link->delete();
+            if ($wasDefault && $group !== '') {
+                $affectedGroups[$group] = true;
+            }
+        }
+
+        foreach (array_keys($affectedGroups) as $group) {
+            $remaining = $this->getTranslations($entityType, $group);
+            if (!empty($remaining)) {
+                $hasDefault = false;
+                foreach ($remaining as $remLink) {
+                    if ($remLink->isDefault()) {
+                        $hasDefault = true;
+                        break;
+                    }
+                }
+                if (!$hasDefault) {
+                    $first = reset($remaining);
+                    if ($first instanceof TranslationLink) {
+                        $first->attributes['is_default'] = 1;
+                        $first->save();
+                    }
+                }
+            }
+        }
+    }
 }

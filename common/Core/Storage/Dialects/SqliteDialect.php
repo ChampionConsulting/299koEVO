@@ -71,7 +71,7 @@ class SqliteDialect implements SqlDialectInterface
             $lines[] = "$name $sqlType";
         }
 
-        $sql = "CREATE TABLE $table (" . implode(', ', $lines) . ")";
+        $sql = "CREATE TABLE IF NOT EXISTS $table (" . implode(', ', $lines) . ")";
         // Indexes are typically separate in SQLite for CREATE TABLE cleanliness
         return $sql;
     }
@@ -84,7 +84,7 @@ class SqliteDialect implements SqlDialectInterface
 
     public function getIndexSql(string $table, string $column): string
     {
-        return "CREATE INDEX idx_{$table}_{$column} ON $table($column)";
+        return "CREATE INDEX IF NOT EXISTS idx_{$table}_{$column} ON $table($column)";
     }
 
     private function mapToSqlType(string $type): string
@@ -92,6 +92,7 @@ class SqliteDialect implements SqlDialectInterface
         $type = strtolower($type);
         if (strpos($type, 'int') !== false) return "INTEGER";
         if (strpos($type, 'bool') !== false) return "INTEGER";
+        if (strpos($type, 'float') !== false || strpos($type, 'double') !== false || strpos($type, 'decimal') !== false) return "REAL";
         if (strpos($type, 'json') !== false || strpos($type, 'array') !== false) return "TEXT";
         if (strpos($type, 'date') !== false) return "DATETIME";
         return "TEXT";

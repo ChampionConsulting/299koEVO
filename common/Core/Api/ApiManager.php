@@ -27,17 +27,28 @@ class ApiManager
 
     private bool $hooksDispatched = false;
 
+    /** @var array<string,array{count:int,resetAt:int}> */
+    private array $rateCounters = [];
+
     /** @var string[] Clés sensibles automatiquement filtrées de toute sortie API */
     private const SENSITIVE_KEYS = [
         'password',
         'password_hash',
         'pwd',
         'token',
+        'token_hash',
         'tokens',
         'secret',
         'api_key',
         'private_key',
+        'smtp_credentials',
+        'payment_configuration',
+        'private_data',
+        'webhook_signature',
+        'internal_notes',
     ];
+
+    private const SENSITIVE_KEY_PATTERN = '/(password|passwd|pwd|secret|token|private|credential|signature|api_key|smtp_|webhook_|payment_conf|internal_note)/i';
 
     private function __construct()
     {
@@ -130,6 +141,12 @@ class ApiManager
         $user = $authResult['user'];
         $authMode = $authResult['mode']; // 'token' | 'session' | 'anonymous'
 
+        // 1b. Limitation de débit (Rate Limiting)
+        $rateInfo = $this->checkRateLimit($matchedRoute, $user);
+        if (!$rateInfo['allowed']) {
+            return ApiResponse::error('Trop de requêtes API (rate limit dépassé).', 429, ['retry_after' => $rateInfo['retry_after']]);
+        }
+
         // 2. Garde CSRF pour les requêtes mutantes authentifiées par session cookie
         $isMutating = in_array($httpMethod, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
         if ($isMutating && $matchedRoute->csrfProtected && $authMode === 'session') {
@@ -173,7 +190,7 @@ class ApiManager
 
             if ($result instanceof ApiResponse) {
                 if (is_array($result->body) && array_key_exists('data', $result->body)) {
-                    $result->body['data'] = $this->sanitizeOutputData($result->body['data']);
+                    $result->body['data'] = $this->sanitizeOutputData($result->body['data'], $matchedRoute->allowedOutputKeys);
                 }
                 return $result;
             }
@@ -181,14 +198,14 @@ class ApiManager
             if (is_array($result) && isset($result['success']) && array_key_exists('data', $result)) {
                 return ApiResponse::normalized(
                     (bool) $result['success'],
-                    $this->sanitizeOutputData($result['data']),
+                    $this->sanitizeOutputData($result['data'], $matchedRoute->allowedOutputKeys),
                     is_array($result['meta'] ?? null) ? $result['meta'] : [],
                     is_array($result['errors'] ?? null) ? $result['errors'] : [],
                     (int) ($result['httpCode'] ?? ($result['success'] ? 200 : 400))
                 );
             }
 
-            return ApiResponse::success($this->sanitizeOutputData($result), ['route' => $matchedRoute->name], 200);
+            return ApiResponse::success($this->sanitizeOutputData($result, $matchedRoute->allowedOutputKeys), ['route' => $matchedRoute->name], 200);
         } catch (\Throwable $e) {
             return ApiResponse::error('Erreur interne du serveur API.', 500, ['exception' => $e->getMessage()]);
         }
@@ -222,20 +239,152 @@ class ApiManager
         return ['user' => null, 'mode' => 'anonymous', 'invalidToken' => false];
     }
 
-    public function sanitizeOutputData(mixed $data): mixed
+    public function sanitizeOutputData(mixed $data, array $allowedTopKeys = [], int $depth = 0): mixed
     {
         if (!is_array($data)) {
             return $data;
         }
+
+        if ($depth === 0 && !empty($allowedTopKeys)) {
+            $allowedMap = array_flip($allowedTopKeys);
+            if (array_is_list($data)) {
+                $data = array_map(
+                    static fn($item) => is_array($item) ? array_intersect_key($item, $allowedMap) : $item,
+                    $data
+                );
+            } else {
+                $data = array_intersect_key($data, $allowedMap);
+            }
+        }
+
         $clean = [];
         foreach ($data as $key => $val) {
-            $keyLower = strtolower((string) $key);
-            if (in_array($keyLower, self::SENSITIVE_KEYS, true)) {
-                continue;
+            if (!is_int($key)) {
+                $keyLower = strtolower((string) $key);
+                if (in_array($keyLower, self::SENSITIVE_KEYS, true) || preg_match(self::SENSITIVE_KEY_PATTERN, $keyLower) === 1) {
+                    continue;
+                }
             }
-            $clean[$key] = is_array($val) ? $this->sanitizeOutputData($val) : $val;
+            $clean[$key] = is_array($val) ? $this->sanitizeOutputData($val, [], $depth + 1) : $val;
         }
         return $clean;
+    }
+
+    /**
+     * Génère un jeton API Bearer, ne persiste que son empreinte SHA-256 (avec expiration et révocation)
+     * et retourne le jeton en clair une seule fois.
+     */
+    public function issueToken(User $user, string $label = 'default', int $ttl = 2592000): string
+    {
+        $plain = 'evo_' . bin2hex(random_bytes(24));
+        $now = time();
+        $tokens = $user->attributes['tokens'] ?? [];
+        if (!is_array($tokens)) {
+            $tokens = [];
+        }
+        $tokens[] = [
+            'token_hash' => hash('sha256', $plain),
+            'label' => trim($label) !== '' ? trim($label) : 'default',
+            'created_at' => $now,
+            'expires_at' => $ttl > 0 ? ($now + $ttl) : 0,
+            'revoked' => false,
+        ];
+        $user->tokens = $tokens;
+        $user->save();
+        return $plain;
+    }
+
+    public function revokeToken(User $user, string $plainOrHash): bool
+    {
+        if ($plainOrHash === '') {
+            return false;
+        }
+        $targetHash = hash('sha256', $plainOrHash);
+        $changed = false;
+
+        if (!empty($user->attributes['token']) && hash_equals((string) $user->attributes['token'], $plainOrHash)) {
+            $user->token = '';
+            $changed = true;
+        }
+
+        $tokens = $user->attributes['tokens'] ?? [];
+        if (is_array($tokens)) {
+            $updated = [];
+            foreach ($tokens as $item) {
+                if (is_string($item)) {
+                    if (hash_equals($item, $plainOrHash)) {
+                        $changed = true;
+                        continue;
+                    }
+                    $updated[] = $item;
+                } elseif (is_array($item)) {
+                    $itemHash = (string) ($item['token_hash'] ?? '');
+                    $itemPlain = (string) ($item['token'] ?? '');
+                    if (($itemHash !== '' && (hash_equals($itemHash, $targetHash) || hash_equals($itemHash, $plainOrHash)))
+                        || ($itemPlain !== '' && hash_equals($itemPlain, $plainOrHash))) {
+                        $item['revoked'] = true;
+                        $item['revoked_at'] = time();
+                        $changed = true;
+                    }
+                    $updated[] = $item;
+                }
+            }
+            $user->tokens = $updated;
+        }
+
+        if ($changed) {
+            $user->save();
+        }
+        return $changed;
+    }
+
+    public function resetRateLimits(): void
+    {
+        $this->rateCounters = [];
+    }
+
+    /**
+     * @return array{allowed:bool,retry_after:int}
+     */
+    private function checkRateLimit(ApiRoute $route, ?User $user): array
+    {
+        $max = (int) ($route->rateLimit['max'] ?? 0);
+        $window = max(1, (int) ($route->rateLimit['window'] ?? 60));
+        if ($max <= 0 && class_exists('\Core\Core')) {
+            $cfgMax = Core::getInstance()->getConfigVal('api_rate_limit_max');
+            if (is_numeric($cfgMax) && (int) $cfgMax > 0) {
+                $max = (int) $cfgMax;
+                $cfgWin = Core::getInstance()->getConfigVal('api_rate_limit_window');
+                if (is_numeric($cfgWin) && (int) $cfgWin > 0) {
+                    $window = (int) $cfgWin;
+                }
+            }
+        }
+        if ($max <= 0) {
+            return ['allowed' => true, 'retry_after' => 0];
+        }
+
+        $actorKey = $user !== null ? ('u:' . $user->getId()) : ('ip:' . ($_SERVER['REMOTE_ADDR'] ?? 'cli'));
+        $bucketKey = $route->name . '|' . $actorKey;
+        $now = time();
+
+        if (!isset($this->rateCounters[$bucketKey]) || $now >= $this->rateCounters[$bucketKey]['resetAt']) {
+            $this->rateCounters[$bucketKey] = [
+                'count' => 1,
+                'resetAt' => $now + $window,
+            ];
+            return ['allowed' => true, 'retry_after' => 0];
+        }
+
+        $this->rateCounters[$bucketKey]['count']++;
+        if ($this->rateCounters[$bucketKey]['count'] > $max) {
+            return [
+                'allowed' => false,
+                'retry_after' => max(1, $this->rateCounters[$bucketKey]['resetAt'] - $now),
+            ];
+        }
+
+        return ['allowed' => true, 'retry_after' => 0];
     }
 
     private function authorizeRoute(ApiRoute $route, ?User $user, array $pathParams): bool
@@ -337,25 +486,45 @@ class ApiManager
 
     private function findUserByApiToken(string $providedToken): ?User
     {
+        $providedHash = hash('sha256', $providedToken);
+        $now = time();
+
         foreach (UsersManager::getUsers() as $user) {
             if ($user->status() !== 'active') {
                 continue;
             }
-            $candidates = [];
             $primaryToken = (string) ($user->attributes['token'] ?? '');
-            if ($primaryToken !== '') {
-                $candidates[] = $primaryToken;
+            if ($primaryToken !== '' && hash_equals($primaryToken, $providedToken)) {
+                return $user;
             }
+
             $extraTokens = $user->attributes['tokens'] ?? [];
-            if (is_array($extraTokens)) {
-                foreach ($extraTokens as $t) {
-                    if (is_string($t) && $t !== '') {
-                        $candidates[] = $t;
-                    }
-                }
+            if (!is_array($extraTokens)) {
+                continue;
             }
-            foreach ($candidates as $candidate) {
-                if (hash_equals($candidate, $providedToken)) {
+            foreach ($extraTokens as $t) {
+                if (is_string($t) && $t !== '') {
+                    if (hash_equals($t, $providedToken)) {
+                        return $user;
+                    }
+                    continue;
+                }
+                if (!is_array($t)) {
+                    continue;
+                }
+                $matched = false;
+                if (!empty($t['token_hash']) && is_string($t['token_hash'])) {
+                    $matched = hash_equals($t['token_hash'], $providedHash);
+                } elseif (!empty($t['token']) && is_string($t['token'])) {
+                    $matched = hash_equals($t['token'], $providedToken);
+                }
+                if ($matched) {
+                    if (!empty($t['revoked'])) {
+                        return null;
+                    }
+                    if (!empty($t['expires_at']) && $now > (int) $t['expires_at']) {
+                        return null;
+                    }
                     return $user;
                 }
             }

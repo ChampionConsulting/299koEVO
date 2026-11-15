@@ -21,6 +21,10 @@ class ApiRoute
     public readonly bool $csrfProtected;
     public readonly string $description;
     public readonly bool $authRequired;
+    /** @var string[] Liste blanche optionnelle des clés autorisées dans `data` */
+    public readonly array $allowedOutputKeys;
+    /** @var array{max?:int,window?:int} */
+    public readonly array $rateLimit;
 
     public function __construct(array $config)
     {
@@ -41,6 +45,12 @@ class ApiRoute
         $this->csrfProtected = (bool) ($config['csrfProtected'] ?? $isMutating);
         $this->description = (string) ($config['description'] ?? '');
         $this->authRequired = $permission !== 'public';
+        $this->allowedOutputKeys = is_array($config['allowedOutputKeys'] ?? $config['allowed_output_keys'] ?? null)
+            ? array_values(array_map('strval', $config['allowedOutputKeys'] ?? $config['allowed_output_keys']))
+            : [];
+        $this->rateLimit = is_array($config['rateLimit'] ?? $config['rate_limit'] ?? null)
+            ? ($config['rateLimit'] ?? $config['rate_limit'])
+            : [];
     }
 
     /**
@@ -74,6 +84,8 @@ class ApiRoute
             'csrf_protected_on_session' => $this->csrfProtected,
             'permission' => $this->permission,
             'params' => $this->paramRules,
+            'allowed_output_keys' => $this->allowedOutputKeys,
+            'rate_limit' => $this->rateLimit,
             'description' => $this->description,
         ];
     }

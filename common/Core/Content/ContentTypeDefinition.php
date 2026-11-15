@@ -22,6 +22,8 @@ class ContentTypeDefinition
     public array $validation = [];
     public array $permissions = [];
     public array $display = [];
+    /** @var string[] Liste blanche optionnelle des clés de premier niveau exposées en API */
+    public array $apiExposedFields = [];
 
     public function __construct(
         string $id,
@@ -33,7 +35,8 @@ class ContentTypeDefinition
         array $fields = [],
         array $validation = [],
         array $permissions = [],
-        array $display = []
+        array $display = [],
+        array $apiExposedFields = []
     ) {
         $this->id = preg_replace('/[^a-zA-Z0-9_\-]/', '', trim($id));
         if ($this->id === '') {
@@ -82,6 +85,7 @@ class ContentTypeDefinition
             'default_sort' => ['created_at' => 'desc'],
             'template' => '',
         ], $display);
+        $this->apiExposedFields = array_values(array_filter(array_map('strval', $apiExposedFields)));
     }
 
     public static function fromArray(array $data): self
@@ -98,7 +102,10 @@ class ContentTypeDefinition
             (array) ($data['fields'] ?? []),
             (array) ($data['validation'] ?? []),
             (array) ($data['permissions'] ?? []),
-            (array) ($data['display'] ?? [])
+            (array) ($data['display'] ?? []),
+            is_array($data['api_exposed_fields'] ?? $data['apiExposedFields'] ?? null)
+                ? ($data['api_exposed_fields'] ?? $data['apiExposedFields'])
+                : []
         );
     }
 
@@ -141,6 +148,7 @@ class ContentTypeDefinition
             'fields' => array_map(fn(FieldDefinition $f) => $f->toArray(), array_values($this->fields)),
             'permissions' => $this->permissions,
             'display' => $this->display,
+            'api_exposed_fields' => $this->apiExposedFields,
         ];
     }
 }

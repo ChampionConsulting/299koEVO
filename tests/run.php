@@ -10,6 +10,7 @@ $suites = [
     __DIR__ . '/Phase3ApiCliTest.php',
     __DIR__ . '/Phase4TranslationTest.php',
     __DIR__ . '/PluginsCompatibilityTest.php',
+    __DIR__ . '/ContradictoryAndPhase5Test.php',
 ];
 
 $allPassed = true;

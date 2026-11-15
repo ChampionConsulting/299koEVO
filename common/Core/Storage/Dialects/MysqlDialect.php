@@ -87,7 +87,7 @@ class MysqlDialect implements SqlDialectInterface
             $lines[] = "INDEX `idx_$col` (`$col`)";
         }
 
-        return "CREATE TABLE `$table` (" . implode(', ', $lines) . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+        return "CREATE TABLE IF NOT EXISTS `$table` (" . implode(', ', $lines) . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     }
 
     public function getAlterTableSql(string $table, string $column, string $type): string
@@ -106,6 +106,8 @@ class MysqlDialect implements SqlDialectInterface
         $type = strtolower($type);
         if (strpos($type, 'int') !== false) return "INT";
         if (strpos($type, 'bool') !== false) return "TINYINT(1)";
+        if (strpos($type, 'decimal') !== false) return "DECIMAL(12,4)";
+        if (strpos($type, 'float') !== false || strpos($type, 'double') !== false) return "DOUBLE";
         if (strpos($type, 'text') !== false) return "TEXT";
         if (strpos($type, 'json') !== false || strpos($type, 'array') !== false) return "JSON";
         if (strpos($type, 'date') !== false) return "DATETIME";

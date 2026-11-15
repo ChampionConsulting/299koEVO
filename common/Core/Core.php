@@ -291,6 +291,9 @@ class Core
         // Note: Les styles des formulaires users sont maintenant dans le thème (theme/EVO/css/theme.css)
         $this->pages();
         $this->pages()->registerRoutes(Router::getInstance());
+        if (file_exists(COMMON . 'Core/Content/routes.php')) {
+            require_once COMMON . 'Core/Content/routes.php';
+        }
         $this->menus()->registerRoutes(Router::getInstance());
         require_once COMMON . 'Core/Page/hooks.php';
         $this->addHook('endFrontHead', '\Core\Page\pageEndFrontHead');
@@ -459,7 +462,7 @@ class Core
      */
     public function isCoreModule(string $moduleName): bool
     {
-        $coreModules = ['dashboard', 'page', 'menus', 'users', 'configmanager', 'filemanager', 'marketplace', 'pluginsmanager'];
+        $coreModules = ['dashboard', 'page', 'content', 'menus', 'users', 'configmanager', 'filemanager', 'marketplace', 'pluginsmanager'];
     return in_array(strtolower($moduleName), $coreModules, true);
     }
 
@@ -1162,6 +1165,7 @@ class Core
                         strpos($controller, 'Core\\Storage\\Controllers\\') === 0 ||
                         strpos($controller, 'Core\\Extensions\\Controllers\\') === 0 ||
                         strpos($controller, 'Core\\Api\\Controllers\\') === 0 ||
+                        strpos($controller, 'Core\\Content\\Controllers\\') === 0 ||
                         strpos($controller, 'Core\\Controllers\\') === 0) {
                         $controllerFile = str_replace('\\', DIRECTORY_SEPARATOR, $controller);
                         $controllerFile = COMMON . $controllerFile . '.php';

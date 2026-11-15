@@ -20,10 +20,12 @@ ContentTypeManager::register([
     'target' => 'custom', // 'custom' ou 'page' pour enrichir les pages existantes
     'translatable' => true,
     'has_blocks' => true,
+    'api_exposed_fields' => ['titre', 'email_contact'], // liste blanche facultative en API REST
     'permissions' => [
         'view' => 'public',
         'create' => 'content.create',
         'edit' => 'content.edit',
+        'edit_others' => 'content.edit_others',
         'delete' => 'content.delete',
         'publish' => 'content.publish',
     ],
@@ -46,10 +48,17 @@ ContentTypeManager::register([
             'translatable' => false,
             'read_permission' => 'content.view',
             'write_permission' => 'content.edit',
+            'api_readable' => true,
+            'api_writable' => true,
         ],
     ],
 ]);
 ```
+
+### Interface d'administration & persistance JSON (`/admin/content`)
+
+- Le module cœur `content` (`Core\Content\Controllers\ContentAdminController`) fournit le back-office complet sous `/admin/content` : création/édition/suppression des types personnalisés, constructeur dynamique des 12 types de champs, et CRUD complet des entrées avec workflow, révisions, multilingue et constructeur visuel de blocs.
+- Les types créés en back-office sont persistés dans `DATA_CORE_CONTENT/custom_types.json` via `saveCustomType()` / `deleteCustomType()` et rechargés automatiquement au démarrage de `ContentTypeManager` (les types enregistrés par code PHP coexistent sans être écrasés).
 
 ### Les 12 types de champs natifs (`FieldManager`)
 
@@ -118,8 +127,9 @@ BlockManager::register([
 ]);
 ```
 
-### Surcharge dans un thème & rendu `plugin_content`
+### Surcharge dans un thème, éditeur visuel & rendu `plugin_content`
 
+- **Constructeur visuel typé** : `admin/templates/page/edit.tpl` et `admin/templates/content/edit_entry.tpl` utilisent tous deux un éditeur de blocs visuels à champs typés (`text`, `image`, `gallery`, `video`, `button`, `columns`, `quote`, `list`, `plugin_content`, avec repli JSON uniquement pour les blocs personnalisés tiers).
 - **Surcharge thème** : créez `theme/<MonTheme>/template/blocks/<type>.tpl` ; le template reçoit `$block`, `$data`, `$settings` et `$context`.
 - **Hook d'enregistrement** : `blocks:register` (reçoit `BlockManager`).
 - **Hook d'adaptation plugin** : `blocks:render-plugin-content` (`['plugin' => string, 'data' => array, 'context' => array, 'html' => string]`).
@@ -173,11 +183,12 @@ Toutes les réponses utilisent l'enveloppe normalisée fournie par `Core\Respons
 
 ### Sécurité intégrée dans `ApiManager`
 
-1. **Authentification** : jeton `Authorization: Bearer <token>`, en-tête `X-API-Token`, ou session utilisateur existante.
+1. **Authentification & tokens révocables** : jeton `Authorization: Bearer <token>`, en-tête `X-API-Token`, ou session utilisateur existante. Les nouveaux tokens émis via `ApiManager::getInstance()->issueToken($user, $label, $ttl)` sont stockés uniquement sous forme d'empreinte SHA-256 (`token_hash`) avec date d'expiration (`expires_at`) et support de révocation (`revokeToken()`).
 2. **Protection CSRF** : obligatoire sur les méthodes mutantes (`POST`, `PUT`, `PATCH`, `DELETE`) en session cookie navigateur (`X-CSRF-Token` ou `_csrf`).
-3. **RBAC/ABAC** : évaluation par `AccessPolicyEvaluator` avec cache isolé par empreinte de politique.
-4. **Validation d'entrée** : HTTP `422` automatique via `param_rules`.
-5. **Filtrage récursif des secrets** : suppression automatique des clés `password`, `password_hash`, `pwd`, `token`, `tokens`, `secret`, `api_key`, `private_key`.
+3. **RBAC/ABAC & Anti-IDOR** : évaluation par `AccessPolicyEvaluator` avec cache isolé par empreinte de politique. Sur `/api/v1/content/...`, les brouillons et entrées non publiées sont masqués en HTTP `404` aux non-propriétaires non privilégiés, et les mutations/suppressions sur l'entrée d'un autre auteur sont bloquées en HTTP `403` sans permission `content.edit_others` (ou droit `publish`).
+4. **Validation & listes blanches d'entrée/sortie** : HTTP `422` automatique via `param_rules` et rejet des champs marqués `api_writable => false`. En lecture API, seuls les champs `api_readable => true` présents dans `api_exposed_fields` (si défini) sont renvoyés ; les routes personnalisées peuvent définir `allowed_output_keys` (`allowedOutputKeys`).
+5. **Filtrage récursif élargi des secrets** : suppression automatique par clés exactes et motif regex (`password`, `passwd`, `pwd`, `secret`, `token`, `private`, `credential`, `signature`, `api_key`, `smtp_*`, `webhook_*`, `payment_conf*`, `internal_note*`).
+6. **Rate limiting par route** : option `'rate_limit' => ['max' => 60, 'window' => 60]` renvoyant HTTP `429` en cas de dépassement.
 
 ### Déclarer une route API dans un plugin
 
@@ -193,6 +204,8 @@ ApiManager::register([
     'pattern' => '/api/v1/monplugin/stats',
     'permission' => 'api.access', // ou 'public', 'auth', 'admin', ou policy ABAC array
     'auth_required' => true,
+    'allowed_output_keys' => ['total'],
+    'rate_limit' => ['max' => 30, 'window' => 60],
     'param_rules' => [
         'limit' => ['type' => 'int'],
     ],
@@ -226,6 +239,7 @@ Exécution strictement réservée au SAPI CLI (`php cli.php <commande>`) :
 - **Routage préfixé non destructif** (`Router.php` + `Core.php`) : extrait `/fr/...`, `/en/...` si la locale est activée dans `locales.enabled` tout en conservant les routes historiques sans préfixe.
 - **Variables de template globales** : `ACTIVE_LOCALE`, `DEFAULT_LOCALE`, `ENABLED_LOCALES`.
 - **Groupes de traduction** : `TranslationManager::getInstance()->linkEntities('content:product', ['fr' => 1, 'en' => 2])`.
+- **Unicité des slugs par locale & suppression propre** : l'unicité d'un slug est vérifiée par couple `(content_type, locale, slug)` (`findBySlug($typeId, $slug, $locale)`, `Page::findBySlug($slug, $locale)`), permettant de réutiliser un même slug entre deux langues tout en rejetant les doublons dans la même langue. La suppression d'une page ou entrée nettoie son `TranslationLink` et promeut automatiquement la première variante restante en `is_default = 1`.
 - **Champs communs vs traduisibles** : tout champ déclaré avec `'translatable' => false` est synchronisé automatiquement vers les autres versions du groupe via `syncCommonFields()`.
 - **Résolution et fallback explicite** : `resolveContentEntry()` et `resolvePageItem()` retournent un objet `ResolvedTranslation` indiquant `fallbackUsed`, `requestedLocale` et `resolvedLocale`.
-- **SEO `hreflang`** : injection automatique des balises `<link rel="alternate" hreflang="...">` sur les pages via `PageHooks`.
+- **SEO `hreflang` & `canonical`** : injection automatique des balises `<link rel="canonical" ...>` (`TranslationManager::renderCanonicalTag()`) et `<link rel="alternate" hreflang="...">` sur les pages via `PageHooks`.

@@ -135,7 +135,8 @@ class FieldManager
         array $input,
         ?User $user = null,
         bool $partial = false,
-        array $existingValues = []
+        array $existingValues = [],
+        bool $isApiContext = false
     ): array {
         $values = $existingValues;
         $errors = [];
@@ -146,6 +147,15 @@ class FieldManager
             }
             $name = $field->name;
             $hasInput = array_key_exists($name, $input);
+
+            if ($isApiContext && !$field->apiWritable) {
+                if ($hasInput && (!array_key_exists($name, $existingValues) || $input[$name] !== $existingValues[$name])) {
+                    $errors[$name] = "Le champ « {$field->label} » n'est pas modifiable via l'API.";
+                } elseif (!array_key_exists($name, $values) && $field->default !== null) {
+                    $values[$name] = $field->default;
+                }
+                continue;
+            }
 
             if (!$this->canWriteField($field, $user)) {
                 if ($hasInput && (!array_key_exists($name, $existingValues) || $input[$name] !== $existingValues[$name])) {
@@ -207,6 +217,24 @@ class FieldManager
             }
             if (!$this->canReadField($field, $user)) {
                 unset($filtered[$field->name]);
+            }
+        }
+        return $filtered;
+    }
+
+    /**
+     * Filtre les valeurs exposées via l'API REST par liste blanche explicite (apiReadable + RBAC).
+     * Seuls les champs explicitement déclarés sur le type de contenu avec apiReadable=true sont conservés.
+     */
+    public function filterApiReadableValues(array $fields, array $values, ?User $user = null): array
+    {
+        $filtered = [];
+        foreach ($fields as $field) {
+            if (!$field instanceof FieldDefinition) {
+                $field = FieldDefinition::fromArray((array) $field);
+            }
+            if ($field->apiReadable && $this->canReadField($field, $user) && array_key_exists($field->name, $values)) {
+                $filtered[$field->name] = $values[$field->name];
             }
         }
         return $filtered;

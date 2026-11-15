@@ -37,6 +37,7 @@ class Permissions
                     'content.view' => 'permissions.content.view',
                     'content.create' => 'permissions.content.create',
                     'content.edit' => 'permissions.content.edit',
+                    'content.edit_others' => 'permissions.content.edit_others',
                     'content.delete' => 'permissions.content.delete',
                     'content.publish' => 'permissions.content.publish',
                     'content.revisions' => 'permissions.content.revisions',

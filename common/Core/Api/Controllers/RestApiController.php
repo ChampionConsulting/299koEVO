@@ -91,7 +91,7 @@ class RestApiController extends Controller
 
         $total = $ctm->countEntries($typeId, $filters, $user);
         $entries = $ctm->findEntries($typeId, $filters, $orderBy, $perPage, $offset, $user);
-        $items = array_map(static fn($e): array => $e->toPublicArray($typeDef, $user), $entries);
+        $items = array_map(static fn($e): array => $e->toPublicArray($typeDef, $user, true), $entries);
 
         return ApiResponse::success($items, [
             'type' => $typeId,
@@ -118,7 +118,7 @@ class RestApiController extends Controller
             return ApiResponse::error('Contenu introuvable ou accès refusé.', 404);
         }
 
-        return ApiResponse::success($entry->toPublicArray($typeDef, $user), ['type' => $typeId], 200);
+        return ApiResponse::success($entry->toPublicArray($typeDef, $user, true), ['type' => $typeId], 200);
     }
 
     public function apiCreateContent(array $ctx): ApiResponse
@@ -133,12 +133,12 @@ class RestApiController extends Controller
             return ApiResponse::error("Type de contenu introuvable ou non exposé en API : {$typeId}", 404);
         }
 
-        $res = $ctm->createEntry($typeId, $payload, $user);
+        $res = $ctm->createEntry($typeId, $payload, $user, true);
         if (!$res['success'] || $res['entry'] === null) {
             return ApiResponse::error($res['errors'], (int) ($res['httpCode'] ?? 422));
         }
 
-        return ApiResponse::success($res['entry']->toPublicArray($typeDef, $user), ['type' => $typeId], 201);
+        return ApiResponse::success($res['entry']->toPublicArray($typeDef, $user, true), ['type' => $typeId], 201);
     }
 
     public function apiUpdateContent(array $ctx): ApiResponse
@@ -185,12 +185,12 @@ class RestApiController extends Controller
             return ApiResponse::error("Type de contenu introuvable ou non exposé en API : {$typeId}", 404);
         }
 
-        $res = $ctm->updateEntry($typeId, $id, $payload, $user, $partial);
+        $res = $ctm->updateEntry($typeId, $id, $payload, $user, $partial, true);
         if (!$res['success'] || $res['entry'] === null) {
             return ApiResponse::error($res['errors'], (int) ($res['httpCode'] ?? 422));
         }
 
-        return ApiResponse::success($res['entry']->toPublicArray($typeDef, $user), ['type' => $typeId], 200);
+        return ApiResponse::success($res['entry']->toPublicArray($typeDef, $user, true), ['type' => $typeId], 200);
     }
 
     private function collectHeaders(): array
