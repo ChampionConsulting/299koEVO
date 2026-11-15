@@ -390,7 +390,7 @@ $contradictoryAndPhase5Tests = [
         $mSql = $mysql->getCreateTableSql('items', 'id', ['amount' => 'decimal', 'ratio' => 'float']);
         $pSql = $pgsql->getCreateTableSql('items', 'id', ['amount' => 'decimal', 'ratio' => 'float']);
 
-        EvoTestRunner::assertContains('CREATE TABLE IF NOT EXISTS items', $sSql, 'SqliteDialect utilise CREATE TABLE IF NOT EXISTS');
+        EvoTestRunner::assertContains('CREATE TABLE IF NOT EXISTS `items`', $sSql, 'SqliteDialect utilise CREATE TABLE IF NOT EXISTS');
         EvoTestRunner::assertContains('REAL', $sSql, 'SqliteDialect mappe decimal/float en REAL');
         EvoTestRunner::assertContains('CREATE INDEX IF NOT EXISTS', $sqlite->getIndexSql('items', 'amount'), 'SqliteDialect utilise CREATE INDEX IF NOT EXISTS');
 
@@ -403,24 +403,26 @@ $contradictoryAndPhase5Tests = [
         EvoTestRunner::assertContains('DOUBLE PRECISION', $pSql, 'PgsqlDialect mappe float en DOUBLE PRECISION');
         EvoTestRunner::assertContains('CREATE INDEX IF NOT EXISTS', $pgsql->getIndexSql('items', 'amount'), 'PgsqlDialect utilise CREATE INDEX IF NOT EXISTS');
 
-        // 2. LocalFeed & Gamification sous SQLite (Database utilise test_suite.sqlite dans env.json)
+        // 2. LocalFeed & Gamification sur le SGBD SQL actif (sqlite ou mysql)
         $db = Database::getInstance();
-        EvoTestRunner::assertEquals('sqlite', $db->getDriverName(), 'Driver SQLite actif pour les DDL plugins');
+        $driver = $db->getDriverName();
+        $activeDialect = $db->getDialect();
+        EvoTestRunner::assertTrue(in_array($driver, ['sqlite', 'mysql', 'pgsql'], true), 'Driver SQL actif pour les DDL plugins');
 
         require_once PLUGINS . 'LocalFeed/LocalFeed.php';
         $lfInstalled = \LocalFeed\LocalFeed::install();
-        EvoTestRunner::assertTrue($lfInstalled, 'LocalFeed::install() réussit sous SQLite');
+        EvoTestRunner::assertTrue($lfInstalled, "LocalFeed::install() réussit sous {$driver}");
         foreach (['poi_posts', 'poi_post_likes', 'poi_post_shares', 'poi_post_comments'] as $tbl) {
-            $exists = $db->query($sqlite->tableExists($tbl));
-            EvoTestRunner::assertTrue(!empty($exists), "Table SQLite {$tbl} créée par LocalFeed");
+            $exists = $db->query($activeDialect->tableExists($tbl));
+            EvoTestRunner::assertTrue(!empty($exists), "Table {$driver} {$tbl} créée par LocalFeed");
         }
 
         require_once PLUGINS . 'gamification/services/PointsService.php';
         $pointsSvc = new \Gamification\Services\PointsService();
-        $gpExists = $db->query($sqlite->tableExists('gamification_points'));
-        EvoTestRunner::assertTrue(!empty($gpExists), 'Table SQLite gamification_points créée par PointsService');
+        $gpExists = $db->query($activeDialect->tableExists('gamification_points'));
+        EvoTestRunner::assertTrue(!empty($gpExists), "Table {$driver} gamification_points créée par PointsService");
         $pointsSvc->addPoints(999, 25, 'test_phase5');
-        EvoTestRunner::assertEquals(25, $pointsSvc->getUserPoints(999), 'PointsService lit et écrit sous SQLite sans erreur');
+        EvoTestRunner::assertEquals(25, $pointsSvc->getUserPoints(999), "PointsService lit et écrit sous {$driver} sans erreur");
 
         // 3. 299search : exécution du hook search:get-results + recherche ContentEntry publiés
         $admin = User::findPK(1);

@@ -70,12 +70,25 @@ if (!defined('EVO_TEST_BOOTSTRAPPED')) {
         'translation_fallback' => true,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-    $sqlStorage = $storageMode === 'sqlite' ? 'sql' : 'json';
-    file_put_contents(DATA . 'env.json', json_encode([
-        'database' => [
+    $sqlStorage = ($storageMode === 'sqlite' || $storageMode === 'mysql') ? 'sql' : 'json';
+    if ($storageMode === 'mysql') {
+        $dbConfig = [
+            'driver' => 'mysql',
+            'host' => getenv('EVO_TEST_DB_HOST') ?: '127.0.0.1',
+            'port' => (int) (getenv('EVO_TEST_DB_PORT') ?: 3306),
+            'dbname' => getenv('EVO_TEST_DB_NAME') ?: 'test_299koevo_audit',
+            'user' => getenv('EVO_TEST_DB_USER') ?: 'test_299koevo_u',
+            'password' => getenv('EVO_TEST_DB_PASS') ?: '',
+            'charset' => 'utf8mb4',
+        ];
+    } else {
+        $dbConfig = [
             'driver' => 'sqlite',
             'path' => DATA . 'test_suite.sqlite',
-        ],
+        ];
+    }
+    file_put_contents(DATA . 'env.json', json_encode([
+        'database' => $dbConfig,
         'storage' => [
             'default' => $sqlStorage,
             'User' => 'json',
