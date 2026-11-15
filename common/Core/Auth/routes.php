@@ -21,7 +21,9 @@ $router->map('GET', '/users/register[/?]', 'Core\Auth\Controllers\UsersLoginCont
 $router->map('POST', '/users/register/send[/?]', 'Core\Auth\Controllers\UsersLoginController#registerSend', 'register-send');
 $router->map('GET', '/users/register/confirm/[a:token][/?]', 'Core\Auth\Controllers\UsersLoginController#confirmRegistration', 'register-confirm');
 $router->map('GET', '/users/profile[/?]', 'Core\Auth\Controllers\UsersLoginController#profile', 'profile');
+$router->map('GET', '/profile[/?]', 'Core\Auth\Controllers\UsersLoginController#profile', 'profile-alias');
 $router->map('GET', '/users/profile/edit[/?]', 'Core\Auth\Controllers\UsersLoginController#profileEdit', 'profile-edit');
+$router->map('GET', '/profile/edit[/?]', 'Core\Auth\Controllers\UsersLoginController#profileEdit', 'profile-edit-alias');
 $router->map('POST', '/users/profile/save[/?]', 'Core\Auth\Controllers\UsersLoginController#profileSave', 'profile-save');
 $router->map('POST', '/users/profile/update-setting[/?]', 'Core\Auth\Controllers\UsersLoginController#profileUpdateSetting', 'profile-update-setting');
 $router->map('GET', '/users/profile/avatar-menu[/?]', 'Core\Auth\Controllers\UsersLoginController#profileAvatarMenu', 'profile-avatar-menu');

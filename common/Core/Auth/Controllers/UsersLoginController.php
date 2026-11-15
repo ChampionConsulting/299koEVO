@@ -676,6 +676,9 @@ class UsersLoginController extends PublicController
             }
         }
         
+        // Hook permettant aux plugins (ex: SocialFeed) de traiter et sauvegarder leurs données de profil
+        $this->core->callHook('user:profile-save', $this->user);
+        
         $this->user->save();
         $this->core->auth()->forceLogin($this->user);
 
