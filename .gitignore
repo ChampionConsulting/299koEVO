@@ -16,3 +16,4 @@ plugin/*
 plugin_back/
 scripts/
 docs/
+*.zip
