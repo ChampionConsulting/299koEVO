@@ -106,12 +106,21 @@ class PageController extends PublicController
         $theme = $this->core->getConfigVal('theme');
         $tplFile = THEMES . $theme . '/mentions-legales.tpl';
         if (!file_exists($tplFile)) {
-            $tplFile = THEMES . 'VivreBourges/mentions-legales.tpl';
+            $tplFile = THEMES . 'default/mentions-legales.tpl';
+        }
+        if (!file_exists($tplFile)) {
+            $tplFile = (defined('ROOT') ? ROOT : '') . 'common/Core/Page/template/mentions-legales.tpl';
         }
         
         $response = new PublicResponse();
-        $response->setTitle('<i class="fa-solid fa-scale-balanced"></i> Mentions Légales');
+        $response->setTitle('Mentions Légales');
+        
+        $siteName = $this->core->getConfigVal('siteName') ?: 'Déclic';
+        $siteUrl = $this->core->getConfigVal('siteUrl') ?: '';
+
         $tpl = new Template($tplFile);
+        $tpl->set('siteName', $siteName);
+        $tpl->set('siteUrl', $siteUrl);
         $response->addTemplate($tpl);
         return $response;
     }
@@ -121,10 +130,7 @@ class PageController extends PublicController
         $theme = $this->core->getConfigVal('theme');
         $tplFile = THEMES . $theme . '/pro.tpl';
         if (!file_exists($tplFile)) {
-            $tplFile = THEMES . 'halloween/pro.tpl';
-        }
-        if (!file_exists($tplFile)) {
-            $tplFile = THEMES . 'VivreBourges/pro.tpl';
+            $tplFile = THEMES . 'default/pro.tpl';
         }
         if (!file_exists($tplFile)) {
             $tplFile = THEMES . $theme . '/comment-revendiquer.tpl';
