@@ -23,25 +23,27 @@
         </tr>
     </thead>
     <tbody>
-        {% for item in entries %}
-        <tr>
-            <td>#{{item.id}}</td>
-            <td><strong>{{item.title}}</strong></td>
-            <td><code>{{item.slug}}</code></td>
-            <td>{{item.locale}}</td>
-            <td>{{item.status}}</td>
-            <td>{{item.updated_at}}</td>
-            <td style="white-space:nowrap;">
-                <a href="{{ROUTER.generate('content-admin-entry-edit', ['type' => typeDef.id, 'id' => item.id])}}" class="button small">Modifier</a>
-                <form method="post" action="{{ROUTER.generate('content-admin-entry-delete', ['type' => typeDef.id, 'id' => item.id])}}" style="display:inline;" onsubmit="return confirm('Supprimer cette entrée ?');">
-                    <input type="hidden" name="token" value="{{token}}" />
-                    <input type="hidden" name="_csrf" value="{{csrfToken}}" />
-                    <button type="submit" class="button small alert">Supprimer</button>
-                </form>
-            </td>
-        </tr>
+        {% if entries %}
+            {% for item in entries %}
+            <tr>
+                <td>#{{item.id}}</td>
+                <td><strong>{{item.title}}</strong></td>
+                <td><code>{{item.slug}}</code></td>
+                <td>{{item.locale}}</td>
+                <td>{{item.status}}</td>
+                <td>{{item.updated_at}}</td>
+                <td style="white-space:nowrap;">
+                    <a href="{{ROUTER.generate('content-admin-entry-edit', ['type' => typeDef.id, 'id' => item.id])}}" class="button small">Modifier</a>
+                    <form method="post" action="{{ROUTER.generate('content-admin-entry-delete', ['type' => typeDef.id, 'id' => item.id])}}" style="display:inline;" onsubmit="return confirm('Supprimer cette entrée ?');">
+                        <input type="hidden" name="token" value="{{token}}" />
+                        <input type="hidden" name="_csrf" value="{{csrfToken}}" />
+                        <button type="submit" class="button small alert">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
         {% else %}
-        <tr><td colspan="7">Aucune entrée pour ce type de contenu.</td></tr>
-        {% endfor %}
+            <tr><td colspan="7">Aucune entrée pour ce type de contenu.</td></tr>
+        {% endif %}
     </tbody>
 </table>

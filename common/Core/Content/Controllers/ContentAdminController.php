@@ -88,6 +88,7 @@ class ContentAdminController extends AdminController
         $tpl->set('typeData', $typeData);
         $tpl->set('fieldsJson', json_encode($typeData['fields'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $tpl->set('supportedFieldTypes', $fm->getSupportedTypes());
+        $tpl->set('supportedFieldTypesJson', json_encode(array_values($fm->getSupportedTypes()), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         $tpl->set('apiExposedFieldsCsv', implode(', ', $typeData['api_exposed_fields'] ?? []));
         $tpl->set('token', $this->user->token);
         $tpl->set('csrfToken', Csrf::token());

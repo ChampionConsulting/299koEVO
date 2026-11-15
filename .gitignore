@@ -13,6 +13,7 @@ plugin/*
 !plugin/.gitkeep
 
 # Dossiers internes et sauvegardes de dev
+tests/
 plugin_back/
 scripts/
 docs/

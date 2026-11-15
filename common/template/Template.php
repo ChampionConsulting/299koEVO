@@ -549,6 +549,20 @@ class Template
                             $val = mb_substr($val, -1);
                         }
                         break;
+                    case 'json_encode':
+                    case 'json':
+                        $val = json_encode($val, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        break;
+                    case 'length':
+                    case 'count':
+                        if (is_countable($val) || is_array($val)) {
+                            $val = count($val);
+                        } elseif (is_string($val)) {
+                            $val = mb_strlen($val);
+                        } else {
+                            $val = 0;
+                        }
+                        break;
                 }
             }
             return $val;
