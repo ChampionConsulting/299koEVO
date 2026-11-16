@@ -499,6 +499,23 @@ class Template
                             $val = strip_tags($val);
                         }
                         break;
+                    case 'date':
+                        if ($val) {
+                            $format = 'd/m/Y H:i';
+                            if ($filterArgs) {
+                                $format = trim($filterArgs, "() '\"");
+                            }
+                            $time = is_numeric($val) ? (int)$val : strtotime((string)$val);
+                            if ($time !== false && $time > 0) {
+                                $val = date($format, $time);
+                            }
+                        }
+                        break;
+                    case 'nl2br':
+                        if (is_string($val)) {
+                            $val = nl2br($val);
+                        }
+                        break;
                     case 'raw':
                         // Explicit raw bypass
                         break;

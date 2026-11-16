@@ -25,9 +25,9 @@ class AdminController extends Controller {
 
     /**
      * Current plugin instance
-     * @var Plugin
+     * @var ?Plugin
      */
-    protected Plugin $runPlugin;
+    protected ?Plugin $runPlugin = null;
 
     /**
      * Current User
@@ -46,18 +46,45 @@ class AdminController extends Controller {
             $this->core->error404();
         }
         $pluginName = $this->core->getPluginToCall();
-        if (PluginsManager::isActivePlugin($pluginName)) {
+
+        // Si le nom du plugin n'a pas été déduit de l'URI ou n'est pas actif, le déduire depuis la classe du contrôleur
+        if (empty($pluginName) || !PluginsManager::isActivePlugin($pluginName)) {
+            $class = get_class($this);
+            // 1. Depuis le namespace : ex. LiveChat\Controllers\LiveChatAdminController
+            if (strpos($class, '\\') !== false) {
+                $nsCandidate = explode('\\', $class)[0];
+                if (PluginsManager::isActivePlugin($nsCandidate)) {
+                    $pluginName = $nsCandidate;
+                }
+            }
+            // 2. Depuis le nom de classe : ex. AntispamAdminController, TelemetryAdminController
+            if (empty($pluginName) || !PluginsManager::isActivePlugin($pluginName)) {
+                $shortName = (strpos($class, '\\') !== false) ? substr(strrchr($class, '\\'), 1) : $class;
+                // Essai 1: retirer seulement Controller (ex: TelemetryAdminController -> TelemetryAdmin)
+                $cand1 = preg_replace('/Controller$/i', '', $shortName);
+                if (!empty($cand1) && PluginsManager::isActivePlugin($cand1)) {
+                    $pluginName = $cand1;
+                } else {
+                    // Essai 2: retirer AdminController et variantes (ex: AntispamAdminController -> Antispam)
+                    $clean = preg_replace('/(Admin)?(Controller|PostsController|CategoriesController|ConfigController|CommentsController|PagesController|HistoryController|ProductsController|OrdersController|ModerationController|ManagementController)?$/i', '', $shortName);
+                    if (!empty($clean) && PluginsManager::isActivePlugin($clean)) {
+                        $pluginName = $clean;
+                    }
+                }
+            }
+        }
+
+        if (!empty($pluginName) && PluginsManager::isActivePlugin($pluginName)) {
             $this->runPlugin = $this->pluginsManager->getPlugin($pluginName);
             // Normaliser le nom du plugin vers sa casse réelle
             if ($this->runPlugin) {
                 $pluginName = $this->runPlugin->getName();
-            }
-            // Charger les traductions du plugin
-            if ($this->runPlugin) {
                 $this->runPlugin->loadLangFile();
+                $this->runPlugin->loadControllers();
             }
         } elseif (
-            !$this->core->isCoreModule($pluginName)
+            !empty($pluginName)
+            && !$this->core->isCoreModule($pluginName)
             && !$this->core->extensions()->isCoreAdminModule($pluginName)
             && !$this->core->settings()->isCoreAdminModule($pluginName)
             && !$this->core->media()->isCoreAdminModule($pluginName)
