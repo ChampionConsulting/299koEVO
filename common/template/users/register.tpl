@@ -46,7 +46,7 @@
 
         {% if antispam %}
             <div class="field antispam-wrapper">
-                {{antispamField}}
+                {{antispamField|raw}}
             </div>
         {% endif %}
 

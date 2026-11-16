@@ -282,9 +282,25 @@ class PluginsManager {
             $problems[] = "infos.json: champ 'name' manquant";
         }
         
+        // Config usine
+        $initConfig = Util::readJsonFile(PLUGINS . $name . '/param/config.json');
+        if (!is_array($initConfig)) {
+            $initConfig = [];
+            if (!empty($problems)) { // Ne logger que si d'autres problèmes existent
+                $problems[] = "param/config.json invalide ou manquant";
+            }
+        }
+
         // Configuration du plugin
         $config = Util::readJsonFile(DATA_PLUGIN . $name . '/config.json');
-        if (!is_array($config)) {
+        if (!is_array($config) && !empty($initConfig['activate'])) {
+            // Auto-provisioning sécurisé pour les plugins actifs par défaut
+            if (!is_dir(DATA_PLUGIN . $name)) {
+                @mkdir(DATA_PLUGIN . $name, 0755, true);
+            }
+            Util::writeJsonFile(DATA_PLUGIN . $name . '/config.json', $initConfig);
+            $config = $initConfig;
+        } elseif (!is_array($config)) {
             $config = [];
             if (!empty($problems)) { // Ne logger que si d'autres problèmes existent
                 $problems[] = "config.json invalide ou manquant";
@@ -295,15 +311,6 @@ class PluginsManager {
         $hooks = Util::readJsonFile(PLUGINS . $name . '/param/hooks.json');
         if (!is_array($hooks)) {
             $hooks = [];
-        }
-        
-        // Config usine
-        $initConfig = Util::readJsonFile(PLUGINS . $name . '/param/config.json');
-        if (!is_array($initConfig)) {
-            $initConfig = [];
-            if (!empty($problems)) { // Ne logger que si d'autres problèmes existent
-                $problems[] = "param/config.json invalide ou manquant";
-            }
         }
         
         // Logger les problèmes
