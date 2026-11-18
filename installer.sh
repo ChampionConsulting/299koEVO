@@ -187,18 +187,72 @@ if [ -z "$PHP_SOCK" ]; then
     PHP_SOCK="unix:/var/run/php/php8.4-fpm-${APP_ID}.sock"
 fi
 
-echo "==> Configuration automatique Nginx / YunoHost pour 299Ko EVO"
-echo "    Domaine    : $DOMAIN"
-echo "    Webapp ID  : $APP_ID ($APP_DIR)"
-echo "    Socket PHP : $PHP_SOCK"
+# Détecter la version PHP précise
+PHP_VER=""
+if [[ "$PHP_SOCK" =~ php([0-9]+\.[0-9]+)-fpm ]]; then
+    PHP_VER="${BASH_REMATCH[1]}"
+elif [ -f "/etc/yunohost/apps/${APP_ID}/settings.yml" ]; then
+    PHP_VER="$(grep -E '^phpversion:' "/etc/yunohost/apps/${APP_ID}/settings.yml" 2>/dev/null | head -n1 | awk '{print $2}' | tr -d "\"'" || true)"
+fi
+if [ -z "$PHP_VER" ] && command -v php >/dev/null 2>&1; then
+    PHP_VER="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || true)"
+fi
+if [ -z "$PHP_VER" ]; then
+    PHP_VER="8.4"
+fi
 
-# 7. Supprimer error-code.conf qui intercepte les routes virtuelles (ex: /admin, /blog)
+echo "==> Configuration automatique Nginx / YunoHost pour 299Ko EVO"
+echo "    Domaine     : $DOMAIN"
+echo "    Webapp ID   : $APP_ID ($APP_DIR)"
+echo "    Socket PHP  : $PHP_SOCK"
+echo "    Version PHP : $PHP_VER"
+
+# 7. Vérification et installation automatique des extensions PHP requises
+REQUIRED_EXTS=("sqlite3" "curl" "zip" "gd" "mbstring" "xml")
+MISSING_PKGS=()
+
+if command -v apt-get >/dev/null 2>&1; then
+    for ext in "${REQUIRED_EXTS[@]}"; do
+        pkg="php${PHP_VER}-${ext}"
+        is_installed=false
+        if dpkg -s "$pkg" >/dev/null 2>&1; then
+            is_installed=true
+        elif command -v "php${PHP_VER}" >/dev/null 2>&1 && "php${PHP_VER}" -m 2>/dev/null | grep -qi "^${ext}$"; then
+            is_installed=true
+        fi
+
+        if [ "$is_installed" = false ]; then
+            MISSING_PKGS+=("$pkg")
+        fi
+    done
+
+    if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
+        echo "==> Extensions PHP manquantes pour PHP ${PHP_VER} : ${MISSING_PKGS[*]}"
+        echo "    Installation automatique via apt-get..."
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq || true
+        if apt-get install -y "${MISSING_PKGS[@]}"; then
+            echo "[+] Extensions PHP installées : ${MISSING_PKGS[*]}"
+            if systemctl is-active --quiet "php${PHP_VER}-fpm"; then
+                systemctl reload "php${PHP_VER}-fpm" 2>/dev/null || systemctl restart "php${PHP_VER}-fpm" 2>/dev/null || true
+                echo "[+] Service php${PHP_VER}-fpm rechargé."
+            fi
+        else
+            echo "[!] Avertissement : impossible d'installer automatiquement : ${MISSING_PKGS[*]}"
+            echo "    Exécutez manuellement : sudo apt-get install ${MISSING_PKGS[*]}"
+        fi
+    else
+        echo "[+] Extensions PHP requises opérationnelles (${REQUIRED_EXTS[*]})."
+    fi
+fi
+
+# 8. Supprimer error-code.conf qui intercepte les routes virtuelles (ex: /admin, /blog)
 if [ -f "$NGINX_DIR/error-code.conf" ]; then
     rm -f "$NGINX_DIR/error-code.conf"
     echo "[-] error-code.conf supprimé."
 fi
 
-# 8. Installer rewrite.conf
+# 9. Installer rewrite.conf
 cat << EOF > "$NGINX_DIR/rewrite.conf"
 location = /ads.txt {
     alias ${APP_DIR}/ads.txt;
@@ -233,7 +287,7 @@ location ~ \.php$ {
 EOF
 echo "[+] rewrite.conf généré."
 
-# 9. Installer 299ko.conf
+# 10. Installer 299ko.conf
 cat << "EOF" > "$NGINX_DIR/299ko.conf"
 # Fallback de réécriture propre pour 299Ko CMS
 if (!-f $request_filename) {
@@ -242,7 +296,7 @@ if (!-f $request_filename) {
 EOF
 echo "[+] 299ko.conf généré."
 
-# 10. Ajuster php.conf
+# 11. Ajuster php.conf
 cat << EOF > "$NGINX_DIR/php.conf"
 location ~ [^/]\.php(/|$) {
     fastcgi_split_path_info ^(.+?\.php)(/.*)$;
@@ -256,16 +310,16 @@ location ~ [^/]\.php(/|$) {
 EOF
 echo "[+] php.conf mis à jour."
 
-# 11. Ajuster les permissions du CMS et créer le dossier miroir conf/
+# 12. Ajuster les permissions du CMS et créer le dossier miroir conf/
 if [ -d "$APP_DIR" ]; then
     mkdir -p "$APP_DIR/data" "$APP_DIR/upload" "$APP_DIR/conf"
     cp "$NGINX_DIR"/*.conf "$APP_DIR/conf/" 2>/dev/null || true
     chown -R "${APP_ID}:www-data" "$APP_DIR" 2>/dev/null || true
-    find "$APP_DIR/data" "$APP_DIR/upload" -type d -exec chmod 775 {} + 2>/dev/null || true
-    find "$APP_DIR/data" "$APP_DIR/upload" -type f -exec chmod 664 {} + 2>/dev/null || true
+    find "$APP_DIR/data" "$APP_DIR/upload" "$APP_DIR/plugin" "$APP_DIR/theme" -type d -exec chmod 775 {} + 2>/dev/null || true
+    find "$APP_DIR/data" "$APP_DIR/upload" "$APP_DIR/plugin" "$APP_DIR/theme" -type f -exec chmod 664 {} + 2>/dev/null || true
     echo "[+] Permissions de $APP_DIR et miroir $APP_DIR/conf vérifiés."
 fi
 
-# 12. Test et reload Nginx
+# 13. Test et reload Nginx
 nginx -t && systemctl reload nginx
 echo "==> Terminé avec succès ! Nginx est configuré et rechargé pour https://${DOMAIN}"
