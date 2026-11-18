@@ -32,7 +32,9 @@ class MarketPlaceManager
 
     public function getThemes(): array
     {
-        $themes = $this->cache->get('marketplace-themes');
+        $token = (string) Core::getInstance()->getConfigVal('marketplaceLicenseKey');
+        $cacheKey = 'marketplace-themes' . (!empty($token) ? '-' . md5($token) : '');
+        $themes = $this->cache->get($cacheKey);
         if ($themes === false) {
             $curl = $this->makeCurl('repository/api/get-themes');
             $curl->post();
@@ -42,14 +44,16 @@ class MarketPlaceManager
             }
             $themes = json_decode($resp['body']);
             // Cache réduit à 5 minutes (300 secondes) pour avoir des mises à jour plus rapides
-            $this->cache->set('marketplace-themes', $themes, 300);
+            $this->cache->set($cacheKey, $themes, 300);
         }
         return $themes;
     }
 
     public function getPlugins(): array
     {
-        $plugins = $this->cache->get('marketplace-plugins');
+        $token = (string) Core::getInstance()->getConfigVal('marketplaceLicenseKey');
+        $cacheKey = 'marketplace-plugins' . (!empty($token) ? '-' . md5($token) : '');
+        $plugins = $this->cache->get($cacheKey);
         if ($plugins === false) {
             $curl = $this->makeCurl('repository/api/get-plugins');
             $curl->post();
@@ -59,7 +63,7 @@ class MarketPlaceManager
             }
             $plugins = json_decode($resp['body']);
             // Cache réduit à 5 minutes (300 secondes) pour avoir des mises à jour plus rapides
-            $this->cache->set('marketplace-plugins', $plugins, 300);
+            $this->cache->set($cacheKey, $plugins, 300);
         }
         return $plugins;
     }

@@ -212,6 +212,7 @@ class ConfigManagerAdminController extends AdminController {
             'maintenance_message' => trim($_POST['maintenance_message'] ?? ''),
             'maintenance_template' => trim($_POST['maintenance_template'] ?? ''),
             'enable_theme_toggle' => (isset($_POST['enable_theme_toggle'])) ? true : false,
+            'marketplaceLicenseKey' => trim($_POST['marketplaceLicenseKey'] ?? ''),
         ];
         $config['allowRegistrations'] = isset($_POST['allowRegistrations']);
         $config['antispamLogin'] = isset($_POST['antispamLogin']);

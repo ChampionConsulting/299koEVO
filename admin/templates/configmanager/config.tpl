@@ -184,6 +184,11 @@
 					<input type="text" name="siteUrl" value="{{CORE.getConfigVal("siteUrl")}}"/>
 				</p>
 				<p>
+					<label for="marketplaceLicenseKey"><i class="fa-solid fa-key"></i> Clé Marketplace / Jeton d'accès client</label><br>
+					<input type="text" name="marketplaceLicenseKey" id="marketplaceLicenseKey" value="{{CORE.getConfigVal("marketplaceLicenseKey")}}" placeholder="Ex: GERARD-VIP-THEME-2026" style="max-width: 400px;"/>
+					<br><small>Jeton ou clé de licence autorisant l'accès aux thèmes et extensions privés/réservés sur le Marketplace.</small>
+				</p>
+				<p>
 					<label for="htaccess">{{Lang.configmanager-htaccess}}</label><br>
 					<textarea id="htaccess" name="htaccess">{{CORE.getHtaccess}}</textarea>
 				</p>

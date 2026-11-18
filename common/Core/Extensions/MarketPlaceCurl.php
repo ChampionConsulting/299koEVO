@@ -46,11 +46,17 @@ class MarketPlaceCurl extends Curl
 
     public function setDatas($datas): self
     {
+        $core = Core::getInstance();
         $this->datas = $datas;
         $this->datas['siteID'] = $this->siteID;
-        $this->datas['siteURL'] = Core::getInstance()->getConfigVal('siteUrl');
-        $this->datas['siteLang'] = Core::getInstance()->getConfigVal('siteLang');
+        $this->datas['siteURL'] = $core->getConfigVal('siteUrl');
+        $this->datas['siteLang'] = $core->getConfigVal('siteLang');
         $this->datas['siteVersion'] = VERSION;
+        $licenseKey = (string)$core->getConfigVal('marketplaceLicenseKey');
+        if (!empty($licenseKey)) {
+            $this->datas['licenseKey'] = $licenseKey;
+            $this->datas['token'] = $licenseKey;
+        }
         return $this;
     }
 
@@ -60,6 +66,13 @@ class MarketPlaceCurl extends Curl
             $this->setDatas([]);
         }
         $this->addOption(CURLOPT_USERAGENT, '299ko-curl-marketplace');
+        $licenseKey = (string)Core::getInstance()->getConfigVal('marketplaceLicenseKey');
+        if (!empty($licenseKey)) {
+            $this->addOption(CURLOPT_HTTPHEADER, [
+                'X-Marketplace-Token: ' . $licenseKey,
+                'Authorization: Bearer ' . $licenseKey
+            ]);
+        }
         return parent::execute();
     }
 }
