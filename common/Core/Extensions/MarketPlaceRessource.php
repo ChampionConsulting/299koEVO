@@ -205,13 +205,17 @@ class MarketPlaceRessource
             return $this->origRessource->preview_images[0];
         }
         if ($this->type === self::TYPE_THEME) {
-            // 1. Si présent en local
+            // 1. Si présent en local : preview.png en priorité, sinon icon.png
+            $localPreview = THEMES . $this->slug . '/preview.png';
+            if (file_exists($localPreview)) {
+                return \Utils\Util::urlBuild(THEMES . $this->slug . '/preview.png');
+            }
             $localIcon = THEMES . $this->slug . '/icon.png';
             if (file_exists($localIcon)) {
                 return \Utils\Util::urlBuild(THEMES . $this->slug . '/icon.png');
             }
             // 2. Sinon URL directe du dépôt officiel Skins_299koEVO sur GitHub
-            return 'https://raw.githubusercontent.com/NemStudio18/Skins_299koEVO/main/' . rawurlencode($this->slug) . '/icon.png';
+            return 'https://raw.githubusercontent.com/NemStudio18/Skins_299koEVO/main/' . rawurlencode($this->slug) . '/preview.png';
         }
         return false;
     }
