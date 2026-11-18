@@ -422,6 +422,16 @@ abstract class JsonActiveRecord implements \ArrayAccess
             // Si le driver n'est pas "json", c'est soit "sql" (default), soit un nom de connexion spécifique (ex: "sqlite")
             $connectionName = ($driver === self::DRIVER_SQL) ? static::$connectionName : $driver;
 
+            // Si le pilote SQL ou l'extension PHP sous-jacente n'est pas disponible, basculer proprement en pur JSON
+            if (!$db->isAvailable($connectionName)) {
+                EmergencyLogger::log("STORAGE_HUB: SQL driver not available for '$connectionName', auto-fallback to pure JSON for Model=$className");
+                $driver = self::DRIVER_JSON;
+            }
+        }
+
+        if ($driver !== self::DRIVER_JSON) {
+            $connectionName = ($driver === self::DRIVER_SQL) ? static::$connectionName : $driver;
+
             $primary = new SqlStorage(
                 $db->setActiveConnection($connectionName),
                 $resolvedTable,

@@ -149,6 +149,10 @@ class PageAdminController extends AdminController {
         }
         $page = new Page();
         $pageItem = $page->create($id);
+        if (!$pageItem) {
+            Show::msg(Lang::get('core-item-not-deleted'), 'error');
+            return $this->list();
+        }
         if ($page->del($pageItem)) {
             $linkedMenuItems = \Core\Navigation\MenuItem::queryBuilder()
                 ->where('type', 'page')

@@ -21,6 +21,9 @@ class UserSynchronizer
     {
         try {
             $db = Database::getInstance();
+            if ($db->getConfig('User') === 'json' || !$db->isAvailable()) {
+                return true;
+            }
             $pdo = $db->getPdo();
             
             $id = $user->getId();
@@ -71,6 +74,9 @@ class UserSynchronizer
     {
         try {
             $db = Database::getInstance();
+            if ($db->getConfig('User') === 'json' || !$db->isAvailable()) {
+                return true;
+            }
             $pdo = $db->getPdo();
             
             $sql = "DELETE FROM users WHERE id = :id";

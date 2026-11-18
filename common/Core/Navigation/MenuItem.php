@@ -18,7 +18,7 @@ class MenuItem extends JsonActiveRecord
     protected static string $filePath = DATA_CORE . 'menu_items.json';
     protected static string $tableName = 'menu_items';
     protected static string $primaryKey = 'id';
-    protected static string $storageDriver = self::DRIVER_SQL;
+    protected static string $storageDriver = self::DRIVER_JSON;
 
     protected static array $attributeMapping = [
         'id'         => 'id',

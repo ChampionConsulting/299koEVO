@@ -206,60 +206,61 @@ if (count($_POST) > 0) {
         ];
     }
 
+    $defaultPagesSeed = [
+        [
+            'id' => 1,
+            'name' => 'Accueil',
+            'position' => 1,
+            'isHomepage' => '1',
+            'content' => "<p>Félicitations, l'installation de 299koEVO s'est déroulée avec succès !<br>Par mesure de sécurité, vous devez maintenant supprimer le fichier install.php du répertoire d'installation.</p>",
+            'isHidden' => 0,
+            'file' => null,
+            'mainTitle' => null,
+            'metaDescriptionTag' => null,
+            'metaTitleTag' => null,
+            'targetAttr' => null,
+            'target' => null,
+            'noIndex' => null,
+            'parent' => null,
+            'cssClass' => null,
+            'password' => null,
+            'img' => null,
+            'navPosition' => 'menu',
+            'navContext' => 'main',
+            'showIcon' => 1,
+            'icon' => 'fa-solid fa-house',
+        ],
+        [
+            'id' => 2,
+            'name' => 'À propos',
+            'position' => 2,
+            'isHomepage' => '0',
+            'content' => "<p>Voici une page d'exemple créée lors de l'installation.</p><p>Vous pouvez la modifier, la renommer ou en créer d'autres depuis <strong>Administration &rarr; Pages</strong>.</p>",
+            'isHidden' => 0,
+            'file' => null,
+            'mainTitle' => null,
+            'metaDescriptionTag' => null,
+            'metaTitleTag' => null,
+            'targetAttr' => null,
+            'target' => null,
+            'noIndex' => null,
+            'parent' => null,
+            'cssClass' => null,
+            'password' => null,
+            'img' => null,
+            'navPosition' => 'menu',
+            'navContext' => 'main',
+            'showIcon' => 1,
+            'icon' => 'fa-solid fa-circle-info',
+        ],
+    ];
+
 	if ($core->install()) {
         if (file_put_contents(DATA . 'env.json', json_encode($dbConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) === false) {
             $core->log('Unable to write env.json file', 'ERROR');
         } else {
             \Core\Database::getInstance()->reloadConfig();
         }
-        $defaultPagesSeed = [
-            [
-                'id' => 1,
-                'name' => 'Accueil',
-                'position' => 1,
-                'isHomepage' => '1',
-                'content' => "<p>Félicitations, l'installation de 299koEVO s'est déroulée avec succès !<br>Par mesure de sécurité, vous devez maintenant supprimer le fichier install.php du répertoire d'installation.</p>",
-                'isHidden' => 0,
-                'file' => null,
-                'mainTitle' => null,
-                'metaDescriptionTag' => null,
-                'metaTitleTag' => null,
-                'targetAttr' => null,
-                'target' => null,
-                'noIndex' => null,
-                'parent' => null,
-                'cssClass' => null,
-                'password' => null,
-                'img' => null,
-                'navPosition' => 'menu',
-                'navContext' => 'main',
-                'showIcon' => 1,
-                'icon' => 'fa-solid fa-house',
-            ],
-            [
-                'id' => 2,
-                'name' => 'À propos',
-                'position' => 2,
-                'isHomepage' => '0',
-                'content' => "<p>Voici une page d'exemple créée lors de l'installation.</p><p>Vous pouvez la modifier, la renommer ou en créer d'autres depuis <strong>Administration &rarr; Pages</strong>.</p>",
-                'isHidden' => 0,
-                'file' => null,
-                'mainTitle' => null,
-                'metaDescriptionTag' => null,
-                'metaTitleTag' => null,
-                'targetAttr' => null,
-                'target' => null,
-                'noIndex' => null,
-                'parent' => null,
-                'cssClass' => null,
-                'password' => null,
-                'img' => null,
-                'navPosition' => 'menu',
-                'navContext' => 'main',
-                'showIcon' => 1,
-                'icon' => 'fa-solid fa-circle-info',
-            ],
-        ];
         $pagesDirPre = DATA_CORE_PAGE;
         if (!is_dir($pagesDirPre)) {
             @mkdir($pagesDirPre, 0755, true);

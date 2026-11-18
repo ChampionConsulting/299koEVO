@@ -99,25 +99,45 @@ class FallbackStorage implements StorageInterface
     public function beginTransaction(): bool
     {
         $this->fallback->beginTransaction();
-        return $this->primary->beginTransaction();
+        try {
+            return $this->primary->beginTransaction();
+        } catch (\Throwable $e) {
+            EmergencyLogger::log("FALLBACK_ERROR: Primary 'beginTransaction' failed: " . $e->getMessage());
+            return true;
+        }
     }
 
     public function commit(): bool
     {
         $this->fallback->commit();
-        return $this->primary->commit();
+        try {
+            return $this->primary->commit();
+        } catch (\Throwable $e) {
+            EmergencyLogger::log("FALLBACK_ERROR: Primary 'commit' failed: " . $e->getMessage());
+            return true;
+        }
     }
 
     public function rollBack(): bool
     {
         $this->fallback->rollBack();
-        return $this->primary->rollBack();
+        try {
+            return $this->primary->rollBack();
+        } catch (\Throwable $e) {
+            EmergencyLogger::log("FALLBACK_ERROR: Primary 'rollBack' failed: " . $e->getMessage());
+            return true;
+        }
     }
 
     public function ensureTable(string $table, string $pk, array $schema, array $indexes = []): bool
     {
         $this->fallback->ensureTable($table, $pk, $schema, $indexes);
-        return $this->primary->ensureTable($table, $pk, $schema, $indexes);
+        try {
+            return $this->primary->ensureTable($table, $pk, $schema, $indexes);
+        } catch (\Throwable $e) {
+            EmergencyLogger::log("FALLBACK_ERROR: Primary 'ensureTable' failed: " . $e->getMessage());
+            return true;
+        }
     }
 
     /**

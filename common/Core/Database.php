@@ -167,6 +167,40 @@ class Database implements SqlDriverInterface
         return isset($this->configs[$name]);
     }
 
+    /**
+     * Vérifie si la connexion et son pilote PDO sous-jacent sont disponibles et opérationnels.
+     */
+    public function isAvailable(string $name = 'default'): bool
+    {
+        if (!extension_loaded('pdo')) {
+            return false;
+        }
+
+        $config = $this->configs[$name] ?? $this->configs['default'] ?? null;
+        if (!$config && strpos($name, 'sqlite:') !== 0) {
+            return false;
+        }
+
+        $driver = $config['driver'] ?? 'mysql';
+        if ($driver === 'sqlite' && !in_array('sqlite', \PDO::getAvailableDrivers(), true)) {
+            return false;
+        }
+        if (($driver === 'mysql' || $driver === '') && !in_array('mysql', \PDO::getAvailableDrivers(), true)) {
+            return false;
+        }
+        if ($driver === 'pgsql' && !in_array('pgsql', \PDO::getAvailableDrivers(), true)) {
+            return false;
+        }
+
+        try {
+            $this->getPdo($name);
+            return true;
+        } catch (\Throwable $e) {
+            \Core\Storage\EmergencyLogger::log("DB_NOT_AVAILABLE: Connexion '$name' indisponible : " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getConnectionsList(): array
     {
         return array_keys($this->configs);

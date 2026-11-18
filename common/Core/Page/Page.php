@@ -92,6 +92,9 @@ class Page
 
     public function del($obj)
     {
+        if (!($obj instanceof PageItem)) {
+            return false;
+        }
         if ($obj->getIsHomepage() < 1 && $this->count() > 1) {
             $deletedId = (string) $obj->getId();
             $success = $obj->delete();
