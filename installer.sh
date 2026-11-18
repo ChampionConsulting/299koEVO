@@ -3,11 +3,11 @@
 # Script d'auto-configuration Nginx / YunoHost pour 299Ko EVO
 #
 # Exemples d'utilisation (tous supportés sans modifier le fichier) :
-#   sudo ./installer.sh --299ko.flexcb.fr
-#   sudo ./installer.sh --https://299ko.flexcb.fr
-#   sudo ./installer.sh 299ko.flexcb.fr
-#   sudo ./installer.sh --domain 299ko.flexcb.fr
-#   sudo /var/www/my_webapp__19/www/installer.sh
+#   sudo ./installer.sh --votre-domaine.fr
+#   sudo ./installer.sh --https://votre-domaine.fr
+#   sudo ./installer.sh votre-domaine.fr
+#   sudo ./installer.sh --domain votre-domaine.fr
+#   sudo ./installer.sh                      (auto-détection automatique)
 #
 # Détecte tout seul : le bon my_webapp__*, la version/socket PHP-FPM et les droits.
 # ==============================================================================
@@ -15,7 +15,7 @@
 set -e
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "Erreur : ce script doit être exécuté avec sudo (ex: sudo $0 --299ko.flexcb.fr)"
+    echo "Erreur : ce script doit être exécuté avec sudo (ex: sudo $0 --votre-domaine.fr)"
     exit 1
 fi
 
@@ -42,8 +42,8 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         -h|--help)
             echo "Usage :"
-            echo "  sudo $0 --<domaine>          (ex: sudo $0 --299ko.flexcb.fr)"
-            echo "  sudo $0 <domaine>            (ex: sudo $0 299ko.flexcb.fr)"
+            echo "  sudo $0 --<domaine>          (ex: sudo $0 --votre-domaine.fr)"
+            echo "  sudo $0 <domaine>            (ex: sudo $0 votre-domaine.fr)"
             echo "  sudo $0                      (auto-détection depuis le dossier my_webapp)"
             exit 0
             ;;
