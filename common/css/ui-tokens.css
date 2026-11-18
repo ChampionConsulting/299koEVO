@@ -261,9 +261,15 @@
     border: 1px solid var(--evo-border);
 }
 .evo-pill-warm {
-    background: var(--evo-warning-bg);
-    color: var(--evo-warning);
-    border-color: var(--evo-warning-border);
+    background: #FEF3C7;
+    color: #92400E !important;
+    border: 1px solid #FCD34D;
+}
+[data-theme="dark"] .evo-pill-warm,
+body.theme-dark .evo-pill-warm {
+    background: rgba(245, 158, 11, 0.18) !important;
+    color: #FBBF24 !important;
+    border-color: rgba(245, 158, 11, 0.45) !important;
 }
 .evo-lead,
 .evo-hero-lead {
@@ -280,48 +286,68 @@
     gap: 12px;
     align-items: center;
 }
-.evo-btn-primary {
+.evo-btn-primary,
+a.evo-btn-primary,
+a.evo-btn-primary:visited {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 10px 18px;
     border-radius: var(--evo-radius-sm);
     background: var(--evo-accent);
-    color: var(--evo-accent-text);
+    color: #FFFFFF !important;
     border: 1px solid var(--evo-accent);
     font-weight: 700;
     font-size: 0.94rem;
     text-decoration: none;
-    transition: background-color 0.18s ease, transform 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.18s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
-.evo-btn-primary:hover {
+.evo-btn-primary *,
+a.evo-btn-primary * {
+    color: #FFFFFF !important;
+}
+.evo-btn-primary:hover,
+a.evo-btn-primary:hover {
     background: var(--evo-accent-hover);
+    color: #FFFFFF !important;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
-.evo-btn-primary .evo-pill {
+.evo-btn-primary .evo-pill,
+a.evo-btn-primary .evo-pill {
     margin-left: 6px;
     padding: 2px 8px;
-    background: rgba(255, 255, 255, 0.22);
-    color: var(--evo-accent-text);
-    border: none;
+    background: rgba(255, 255, 255, 0.28) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.45) !important;
 }
-.evo-btn-secondary {
+.evo-btn-secondary,
+a.evo-btn-secondary,
+a.evo-btn-secondary:visited {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 10px 18px;
     border-radius: var(--evo-radius-sm);
     background: var(--evo-card-bg);
-    color: var(--evo-text);
+    color: var(--evo-text) !important;
     border: 1px solid var(--evo-border-strong);
     font-weight: 600;
     font-size: 0.94rem;
     text-decoration: none;
-    transition: border-color 0.18s ease, color 0.18s ease;
+    transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
 }
-.evo-btn-secondary:hover {
+.evo-btn-secondary:hover,
+a.evo-btn-secondary:hover {
     border-color: var(--evo-accent);
-    color: var(--evo-accent);
+    color: var(--evo-accent) !important;
+}
+[data-theme="dark"] a.evo-btn-secondary,
+body.theme-dark a.evo-btn-secondary {
+    background: var(--evo-card-bg, #1E293B);
+    color: var(--evo-text, #F8FAFC) !important;
+    border-color: var(--evo-border, #334155);
 }
 .evo-stats-strip {
     display: grid;

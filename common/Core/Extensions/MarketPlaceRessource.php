@@ -201,7 +201,19 @@ class MarketPlaceRessource
 
     public function getPreviewUrl()
     {
-        return $this->origRessource->preview_images[0] ?? false;
+        if (!empty($this->origRessource->preview_images[0])) {
+            return $this->origRessource->preview_images[0];
+        }
+        if ($this->type === self::TYPE_THEME) {
+            // 1. Si présent en local
+            $localIcon = THEMES . $this->slug . '/icon.png';
+            if (file_exists($localIcon)) {
+                return \Utils\Util::urlBuild(THEMES . $this->slug . '/icon.png');
+            }
+            // 2. Sinon URL directe du dépôt officiel Skins_299koEVO sur GitHub
+            return 'https://raw.githubusercontent.com/NemStudio18/Skins_299koEVO/main/' . rawurlencode($this->slug) . '/icon.png';
+        }
+        return false;
     }
 
     public function getOthersPreviewsUrl()
