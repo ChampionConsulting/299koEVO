@@ -35,6 +35,8 @@ class MarketPlaceRessource
 
     public bool $isInstallable = false;
 
+    public array $requiredPlugins = [];
+
     protected $origRessource;
 
     protected $versionsUpdate;
@@ -48,6 +50,10 @@ class MarketPlaceRessource
         $this->description = $origRessource->description ?? '';
         $this->lastVersion = $origRessource->version ?? '';
         $this->icon = $origRessource->icon ?? '';
+        $this->requiredPlugins = (array)($origRessource->requiredPlugins ?? $origRessource->requires ?? []);
+        if (empty($this->requiredPlugins) && strtolower($this->slug) === 'socialx') {
+            $this->requiredPlugins = ['SocialFeed'];
+        }
         $this->authorEmail = $origRessource->authorEmail ?? '';
         $this->authorWebsite = $origRessource->authorWebsite ?? '';
         $this->versionsUpdate = $origRessource->versionsUpdate ?? new stdClass();
@@ -81,6 +87,29 @@ class MarketPlaceRessource
         if (!version_compare(PHP_VERSION, $minPHPVersion, '>=')) {
             $this->isInstallable = false;
         }
+    }
+
+    public function getRequiredPlugins(): array
+    {
+        return $this->requiredPlugins;
+    }
+
+    public function getMissingRequiredPlugins(?PluginsManager $pluginsManager = null): array
+    {
+        if ($this->type !== self::TYPE_THEME || empty($this->requiredPlugins)) {
+            return [];
+        }
+        if (!$pluginsManager) {
+            $pluginsManager = \Core\Core::getInstance()->pluginsManager();
+        }
+        $missing = [];
+        foreach ($this->requiredPlugins as $reqP) {
+            $p = $pluginsManager->getPlugin($reqP);
+            if (!$p) {
+                $missing[] = $reqP;
+            }
+        }
+        return $missing;
     }
 
     public function getLocalHash(): ?string

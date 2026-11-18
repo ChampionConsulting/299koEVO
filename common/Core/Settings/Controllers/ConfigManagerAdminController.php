@@ -235,6 +235,18 @@ class ConfigManagerAdminController extends AdminController {
         }
         $config['telemetry_level'] = $telemetryLevel;
 
+        // Vérification des dépendances du thème choisi
+        $selectedTheme = $config['theme'] ?? '';
+        if (!empty($selectedTheme)) {
+            $themeObj = new \Core\Theme($selectedTheme);
+            $missingPlugins = $themeObj->checkDependencies($this->pluginsManager);
+            if (!empty($missingPlugins)) {
+                Show::msg("Le thème '{$selectedTheme}' requiert l'extension '" . implode("', '", $missingPlugins) . "'. Veuillez installer et activer cette extension avant de pouvoir utiliser ce thème.", 'error');
+                $this->core->redirect($this->router->generate('configmanager-admin') . '#label_theme');
+                return;
+            }
+        }
+
         // Invalidate cache if needed (AVANT la sauvegarde pour avoir l'ancienne config)
         $this->invalidateCacheIfNeeded($config);
         

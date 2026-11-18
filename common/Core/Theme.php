@@ -31,6 +31,8 @@ class Theme {
 
     public array $pics = [];
 
+    public array $requiredPlugins = [];
+
     public string $folderName = '';
 
     public string $folderPath = '';
@@ -64,6 +66,37 @@ class Theme {
 
     public function isInstalled():bool {
         return is_dir($this->folderPath);
+    }
+
+    /**
+     * Get the list of required plugins for this theme
+     *
+     * @return array
+     */
+    public function getRequiredPlugins(): array {
+        return (array)($this->requiredPlugins ?? []);
+    }
+
+    /**
+     * Check if all required plugins are installed and active
+     *
+     * @param \Core\Plugin\PluginsManager $pluginsManager
+     * @return array List of missing plugin names
+     */
+    public function checkDependencies(\Core\Plugin\PluginsManager $pluginsManager): array {
+        $missing = [];
+        $required = $this->getRequiredPlugins();
+        // Fallback pour les thèmes connus avec dépendances strictes
+        if (empty($required) && strtolower($this->folderName) === 'socialx') {
+            $required = ['SocialFeed'];
+        }
+        foreach ($required as $pluginName) {
+            $p = $pluginsManager->getPlugin($pluginName);
+            if (!$p || !$p->getConfigVal('activate')) {
+                $missing[] = $pluginName;
+            }
+        }
+        return $missing;
     }
 
     /**

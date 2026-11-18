@@ -141,6 +141,10 @@
                                         <i class="fa-solid fa-circle-check"></i> {{Lang.marketplace.installed}}
                                     </div>
                                 {% endif %}
+                            {% elseif ressource.getMissingRequiredPlugins() %}
+                                <button type="button" disabled class="button market-btn-disabled market-btn-block" style="background:#f59e0b;color:#1e293b;border-color:#d97706;cursor:not-allowed;font-weight:600;" title="Nécessite l'installation préalable de : {{ressource.getMissingRequiredPlugins()|join(', ')}}">
+                                    <i class="fa-solid fa-lock"></i> Requis : {{ressource.getMissingRequiredPlugins()|join(', ')}}
+                                </button>
                             {% else %}
                                 <a href='{ ROUTER.generate("marketplace-install-release", ["type" => ressource.type, "slug" => ressource.slug, "token" => token]) }' class="button market-btn-install market-btn-block">
                                     <i class="fa-solid fa-download"></i> {{Lang.marketplace.install}}

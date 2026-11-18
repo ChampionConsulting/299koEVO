@@ -191,6 +191,16 @@ class AdminMarketplaceController extends AdminController
             return;
         }
 
+        // Vérification des dépendances pour les thèmes (ex: SocialX requiert SocialFeed)
+        if ($ressource->type === MarketPlaceRessource::TYPE_THEME) {
+            $missingPlugins = $ressource->getMissingRequiredPlugins($this->pluginsManager);
+            if (!empty($missingPlugins)) {
+                Show::msg("Impossible d'installer le thème '{$slug}' : vous devez préalablement installer l'extension requise '" . implode("', '", $missingPlugins) . "' depuis le Marketplace.", 'error');
+                $this->core->redirect($this->router->generate('admin-marketplace'));
+                return;
+            }
+        }
+
         $installed = $this->marketManager->installRessource($ressource);
         if ($installed) {
             if ($ressource->type == MarketPlaceRessource::TYPE_PLUGIN) {
