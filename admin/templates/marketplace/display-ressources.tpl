@@ -64,7 +64,7 @@
                 {% if ressource.getPreviewUrl() %}
                     <div class="market-card-preview">
                         <a data-fancybox="ress-{{ressource.slug}}" href="{{ressource.getPreviewUrl()}}">
-                            <img src="{{ressource.getPreviewUrl()}}" alt="{{ressource.name}}" />
+                            <img src="{{ressource.getPreviewUrl()}}" alt="{{ressource.name}}" onerror="this.closest('.market-card-preview').style.display='none'" />
                         </a>
                         {% if ressource.getOthersPreviewsUrl() %}
                             <div class="market-others-previews">
@@ -81,10 +81,10 @@
                 <!-- En-tête principal : Icône carrée stylée + Nom & Auteur -->
                 <div class="market-card-header">
                     <div class="market-app-icon icon-{{ressource.getCategory()}}">
-                        {% if ressource.icon %}
-                            <i class="{{ressource.icon}}"></i>
+                        {% if ressource.hasIconImage() %}
+                            <img src="{{ressource.getIconUrl()}}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" />
                         {% else %}
-                            <i class="fa-solid fa-cube"></i>
+                            <i class="{{ressource.getIconClass()}}"></i>
                         {% endif %}
                     </div>
                     <div class="market-header-meta">

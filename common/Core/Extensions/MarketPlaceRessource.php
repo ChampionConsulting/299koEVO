@@ -243,8 +243,12 @@ class MarketPlaceRessource
             if (file_exists($localIcon)) {
                 return \Utils\Util::urlBuild(THEMES . $this->slug . '/icon.png');
             }
-            // 2. Sinon URL directe du dépôt officiel Skins_299koEVO sur GitHub
-            return 'https://raw.githubusercontent.com/NemStudio18/Skins_299koEVO/main/' . rawurlencode($this->slug) . '/preview.png';
+            // 2. Sinon URL de l'API Marketplace officielle
+            $marketUrl = rtrim((string)\Core::getInstance()->getConfigVal('marketplaceUrl'), '/');
+            if (empty($marketUrl)) {
+                $marketUrl = 'https://299ko-api.flexcb.fr';
+            }
+            return $marketUrl . '/repository/api/asset?type=themes&slug=' . rawurlencode($this->slug) . '&file=preview.png';
         }
         return false;
     }
@@ -322,6 +326,24 @@ class MarketPlaceRessource
             'theme'    => 'fa-solid fa-palette',
         ];
         return $icons[$cat] ?? 'fa-solid fa-puzzle-piece';
+    }
+
+    public function hasIconImage(): bool
+    {
+        return !empty($this->icon) && str_contains($this->icon, '://');
+    }
+
+    public function getIconUrl(): string
+    {
+        return $this->icon;
+    }
+
+    public function getIconClass(): string
+    {
+        if ($this->hasIconImage()) {
+            return '';
+        }
+        return !empty($this->icon) ? $this->icon : $this->getCategoryIcon();
     }
 }
 
