@@ -100,7 +100,7 @@ class MarketPlaceRessource
             return [];
         }
         if (!$pluginsManager) {
-            $pluginsManager = \Core\Core::getInstance()->pluginsManager();
+            $pluginsManager = \Core\Plugin\PluginsManager::getInstance();
         }
         $missing = [];
         foreach ($this->requiredPlugins as $reqP) {

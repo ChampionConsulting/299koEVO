@@ -428,6 +428,11 @@ class Core
         return $this->pageService;
     }
 
+    public function pluginsManager(): \Core\Plugin\PluginsManager
+    {
+        return \Core\Plugin\PluginsManager::getInstance();
+    }
+
     public function menus(): \Core\Navigation\MenuService
     {
         return \Core\Navigation\MenuService::getInstance();
