@@ -138,6 +138,14 @@ class CurrentUser
         return $this->user ? $this->user->getRole() : 'guest';
     }
 
+    public function isAdmin(): bool
+    {
+        if (!$this->isLogged()) {
+            return false;
+        }
+        return $this->canAccess('system:admin-access') || $this->role() === 'admin';
+    }
+
     /**
      * L'utilisateur est-il propriétaire (au moins une fiche approved) ?
      */
