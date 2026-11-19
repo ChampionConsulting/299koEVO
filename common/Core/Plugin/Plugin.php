@@ -60,7 +60,11 @@ class Plugin {
         // Identifiant du plugin
         $this->name = $name;
         // Tableau de configuration
-        $this->config = $config;
+        if (is_array($initConfig) && !empty($initConfig) && is_array($config)) {
+            $this->config = array_merge($initConfig, $config);
+        } else {
+            $this->config = $config;
+        }
         // Tableau d'informations
         $this->infos = $infos;
         // Liste des hooks
@@ -306,14 +310,6 @@ class Plugin {
         }
         if (count($this->config) < 1) {
             return false;
-        }
-        // Vérifier que toutes les clés requises d'origine existent dans la configuration
-        if (is_array($this->initConfig)) {
-            foreach (array_keys($this->initConfig) as $key) {
-                if (!array_key_exists($key, $this->config)) {
-                    return false;
-                }
-            }
         }
         return true;
     }
