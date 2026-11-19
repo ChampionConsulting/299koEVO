@@ -1629,11 +1629,24 @@ body.theme-light #footer {
     padding: 8px 0;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    transition-delay: 0.25s;
+    pointer-events: none;
     z-index: 1000;
     display: block;
     /* Override default hidden */
+}
+
+/* Pont invisible pour transition continue du curseur sans perte de survol */
+#navigation>li>ul::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: transparent;
 }
 
 #navigation>li:hover>ul,
@@ -1641,6 +1654,8 @@ body.theme-light #footer {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    transition-delay: 0s;
+    pointer-events: auto;
 }
 
 #navigation>li>ul>li {
@@ -1713,7 +1728,7 @@ body.theme-light #footer {
     font-size: 24px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 860px) {
     .nav-toggle {
         display: none;
     }
