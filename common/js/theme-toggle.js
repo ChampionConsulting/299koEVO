@@ -11,20 +11,38 @@
     let toggleBtn = null;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
 
-    // Applique l'état sur le DOM (ajoute/enlève classes sur <body>)
+    // Applique l'état sur le DOM (ajoute/enlève classes sur <body> et <html>)
     function applyTheme(theme) {
         const body = document.body;
+        const html = document.documentElement;
         if (!body) return;
 
         // Retire toutes classes "forcées"
         body.classList.remove('theme-dark', 'theme-light');
+        if (html) {
+            html.classList.remove('theme-dark', 'theme-light');
+        }
 
         if (theme === 'dark') {
             body.classList.add('theme-dark');
+            if (html) {
+                html.classList.add('theme-dark');
+                html.setAttribute('data-theme', 'dark');
+            }
         } else if (theme === 'light') {
             body.classList.add('theme-light');
+            if (html) {
+                html.classList.add('theme-light');
+                html.setAttribute('data-theme', 'light');
+            }
         } else {
-            // 'auto' => ne met pas de classe, laisse @media prefers-color-scheme agir
+            // 'auto'
+            const prefersDark = mq.matches;
+            if (html) {
+                html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+                html.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
+            }
+            body.classList.add(prefersDark ? 'theme-dark' : 'theme-light');
         }
         updateToggleUI(theme);
     }
@@ -44,11 +62,18 @@
         toggleBtn.setAttribute('aria-pressed', String(theme !== 'auto'));
         toggleBtn.dataset.state = theme;
 
+        const effectiveDark = (theme === 'dark') || (theme === 'auto' && mq.matches);
+
         // Optionnel : icône/texte si existent
         const themeIcon = document.getElementById('theme-icon');
         const themeLabel = document.getElementById('theme-label');
-        if (themeIcon) themeIcon.textContent = (theme === 'dark') ? '🌙' : (theme === 'light') ? '☀️' : '🌓';
-        if (themeLabel) themeLabel.textContent = (theme === 'dark') ? 'Sombre' : (theme === 'light') ? 'Clair' : 'Auto';
+        if (themeIcon) {
+            themeIcon.textContent = (theme === 'dark') ? '🌙' : (theme === 'light') ? '☀️' : (effectiveDark ? '🌙' : '☀️');
+        }
+        if (themeLabel) {
+            themeLabel.textContent = (theme === 'dark') ? 'Sombre' : (theme === 'light') ? 'Clair' : 'Auto';
+        }
+        toggleBtn.setAttribute('title', 'Mode : ' + (theme === 'dark' ? 'Sombre' : (theme === 'light' ? 'Clair' : 'Auto')) + ' (Cliquer pour changer)');
     }
 
     // Sauvegarde la préférence et l'applique

@@ -1350,3 +1350,74 @@
     }
 }
 
+/* --- Universal Pagination Pattern --- */
+.pagination-wrapper,
+.blog-pagination {
+    margin: 2.5rem 0 1.5rem 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.pagination {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pagination a,
+.pagination .pagination-ellipsis span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: var(--evo-radius-sm, 8px);
+    background: var(--evo-surface, #ffffff);
+    border: 1px solid var(--evo-border, #e2e8f0);
+    color: var(--evo-text, #0f172a);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: var(--evo-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.pagination a:hover {
+    border-color: var(--evo-accent, #3b82f6);
+    color: var(--evo-accent, #3b82f6);
+    background: var(--evo-accent-soft, rgba(59, 130, 246, 0.08));
+    transform: translateY(-1px);
+}
+
+.pagination li.active a,
+.pagination a[aria-current="page"] {
+    background: var(--evo-accent, #3b82f6);
+    color: #ffffff;
+    border-color: var(--evo-accent, #3b82f6);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    font-weight: 700;
+}
+
+.pagination .pagination-ellipsis span {
+    border: none;
+    background: transparent;
+    color: var(--evo-text-muted, #94a3b8);
+    box-shadow: none;
+    min-width: 24px;
+}
+
+
