@@ -71,11 +71,11 @@ class PageAdminController extends AdminController {
                 $editorialStats['protectedPages']++;
             }
 
-            $locs = $menuService->getMenuLocationsForPage((int)$item->getId());
+            $locs = $menuService->getMenuLocationsForPage((string)$item->getId());
             $locBadges = array_map(fn($loc) => $locationLabels[$loc] ?? $loc, $locs);
 
             $cmsPages[] = [
-                'id'            => (int)$item->getId(),
+                'id'            => (string)$item->getId(),
                 'name'          => (string)$item->getName(),
                 'mainTitle'     => (string)$item->getMainTitle(),
                 'url'           => $page->makeUrl($item),

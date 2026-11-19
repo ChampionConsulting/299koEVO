@@ -97,14 +97,40 @@ function initAdminTopNav() {
             const parent = btn.closest('.adm-has-drop');
             const willOpen = !parent.classList.contains('is-open');
             document.querySelectorAll('.adm-has-drop.is-open').forEach(function (other) {
-                other.classList.remove('is-open');
-                const ob = other.querySelector('button[aria-expanded]');
-                if (ob) ob.setAttribute('aria-expanded', 'false');
+                if (other !== parent) {
+                    other.classList.remove('is-open');
+                    const ob = other.querySelector('button[aria-expanded]');
+                    if (ob) ob.setAttribute('aria-expanded', 'false');
+                }
             });
             if (willOpen) {
                 parent.classList.add('is-open');
                 btn.setAttribute('aria-expanded', 'true');
+            } else {
+                parent.classList.remove('is-open');
+                btn.setAttribute('aria-expanded', 'false');
             }
+        });
+    });
+
+    // Tolérance au survol pour éviter la fermeture abrupte des sous-menus
+    document.querySelectorAll('.adm-has-drop').forEach(function (drop) {
+        let hoverTimer = null;
+        drop.addEventListener('mouseenter', function () {
+            if (hoverTimer) {
+                clearTimeout(hoverTimer);
+                hoverTimer = null;
+            }
+            drop.classList.add('is-open');
+            const b = drop.querySelector('button[aria-expanded]');
+            if (b) b.setAttribute('aria-expanded', 'true');
+        });
+        drop.addEventListener('mouseleave', function () {
+            hoverTimer = setTimeout(function () {
+                drop.classList.remove('is-open');
+                const b = drop.querySelector('button[aria-expanded]');
+                if (b) b.setAttribute('aria-expanded', 'false');
+            }, 350);
         });
     });
 

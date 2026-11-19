@@ -227,7 +227,15 @@ class Plugin {
     }
 
     public function getDataPath() {
+        if ($this->dataPath === false && is_dir(DATA_PLUGIN . $this->name)) {
+            $this->dataPath = DATA_PLUGIN . $this->name . '/';
+        }
         return $this->dataPath;
+    }
+
+    public function setConfig(array $config) {
+        $this->config = $config;
+        $this->dataPath = DATA_PLUGIN . $this->name . '/';
     }
 
     public function getParamTemplate() {
@@ -308,7 +316,13 @@ class Plugin {
         if (!file_exists(DATA_PLUGIN . $this->name . '/config.json')) {
             return false;
         }
-        if (count($this->config) < 1) {
+        if (empty($this->config)) {
+            $saved = \Utils\Util::readJsonFile(DATA_PLUGIN . $this->name . '/config.json');
+            if (is_array($saved) && !empty($saved)) {
+                $this->config = $saved;
+                $this->dataPath = DATA_PLUGIN . $this->name . '/';
+                return true;
+            }
             return false;
         }
         return true;

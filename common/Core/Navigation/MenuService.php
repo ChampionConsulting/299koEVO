@@ -503,7 +503,7 @@ class MenuService
     /**
      * Retourne les emplacements où une page donnée apparaît (pour affichage informatif dans /admin/page).
      */
-    public function getMenuLocationsForPage(int $pageId): array
+    public function getMenuLocationsForPage(string|int $pageId): array
     {
         $this->ensureMigrated();
         $items = MenuItem::queryBuilder()

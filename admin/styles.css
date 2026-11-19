@@ -775,6 +775,7 @@ div.tooltip:hover > span {
     flex-direction: column;
 }
 
+#header,
 #header.adm-topbar{
     background: var(--nav-bg-color);
     position: sticky;
@@ -1269,10 +1270,10 @@ section > footer, .card > footer {
 .adm-drop-menu::before {
     content: '';
     position: absolute;
-    top: -12px;
+    top: -16px;
     left: 0;
     right: 0;
-    height: 12px;
+    height: 18px;
     background: transparent;
 }
 

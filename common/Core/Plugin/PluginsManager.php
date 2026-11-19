@@ -51,9 +51,20 @@ class PluginsManager {
     ## Sauvegarde la configuration d'un objet plugin
 
     public function savePluginConfig($obj) {
-        if ($obj->getIsValid() && $path = $obj->getDataPath()) {
-            return Util::writeJsonFile($path . 'config.json', $obj->getConfig());
+        if ($obj->getIsValid()) {
+            $path = $obj->getDataPath();
+            if (!$path) {
+                $dir = DATA_PLUGIN . $obj->getName();
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0755, true);
+                }
+                $path = $obj->getDataPath();
+            }
+            if ($path) {
+                return Util::writeJsonFile($path . 'config.json', $obj->getConfig());
+            }
         }
+        return false;
     }
 
     /**
@@ -95,6 +106,9 @@ class PluginsManager {
         if (!file_exists(DATA_PLUGIN . $name . DS . 'config.json')) {
             Core::getInstance()->getLogger()->log(\Core\Logger::LEVEL_ERROR, "Plugin $name can't be installed");
             return false;
+        }
+        if (isset($this->plugins[$name])) {
+            $this->plugins[$name]->setConfig($config);
         }
         Core::getInstance()->getLogger()->log(\Core\Logger::LEVEL_INFO, "Plugin $name successfully installed");
         return true;
