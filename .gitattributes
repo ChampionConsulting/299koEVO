@@ -1,0 +1,6 @@
+# Exclure les fichiers de configuration et de documentation des archives de distribution
+.github export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+README.md export-ignore
+README.fr.md export-ignore

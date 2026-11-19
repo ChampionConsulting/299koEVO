@@ -18,3 +18,7 @@ plugin_back/
 scripts/
 docs/
 *.zip
+release.sh
+installer.sh
+*.sh
+
