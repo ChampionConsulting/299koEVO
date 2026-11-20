@@ -35,6 +35,10 @@ class MarketPlaceRessource
 
     public bool $isInstallable = false;
 
+    public bool $isExclusive = false;
+
+    public string $exclusiveLabel = '';
+
     public array $requiredPlugins = [];
 
     protected $origRessource;
@@ -57,6 +61,8 @@ class MarketPlaceRessource
         $this->authorEmail = $origRessource->authorEmail ?? '';
         $this->authorWebsite = $origRessource->authorWebsite ?? '';
         $this->versionsUpdate = $origRessource->versionsUpdate ?? new stdClass();
+        $this->isExclusive = !empty($origRessource->exclusive);
+        $this->exclusiveLabel = (string)($origRessource->exclusive_label ?? ($this->isExclusive ? 'Exclusivité privée' : ''));
 
         if ($this->type === self::TYPE_PLUGIN) {
             $plu = PluginsManager::getInstance()->getPlugin($this->slug);

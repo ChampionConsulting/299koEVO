@@ -228,26 +228,63 @@ class MarketPlaceManager
             }
 
             $targetDir = $ressource->type === MarketPlaceRessource::TYPE_PLUGIN ? PLUGINS : THEMES;
-            $pluginDir = $targetDir . $safeSlug . DS;
             
+            // Résolution insensible à la casse pour préserver le nom exact du dossier existant (ex: LiveChat vs livechat)
+            $existingDirName = null;
+            if (is_dir($targetDir)) {
+                $entries = scandir($targetDir);
+                if ($entries !== false) {
+                    foreach ($entries as $entry) {
+                        if ($entry !== '.' && $entry !== '..' && strcasecmp($entry, $safeSlug) === 0) {
+                            $existingDirName = $entry;
+                            break;
+                        }
+                    }
+                }
+            }
+            $targetSlug = $existingDirName ?? $safeSlug;
+            $pluginDir = $targetDir . $targetSlug . DS;
+
+            // Si un dossier avec une casse différente résiduelle existe, le nettoyer
+            if ($existingDirName !== null && $existingDirName !== $safeSlug && is_dir($targetDir . $safeSlug)) {
+                $this->removeDirectoryRecursive($targetDir . $safeSlug);
+            }
+
             // Vérifier si le ZIP contient déjà le dossier parent ou les fichiers directement
             $firstEntry = $zip->getNameIndex(0);
-            $hasParentDir = $firstEntry !== false && strpos($firstEntry, $safeSlug . '/') === 0;
+            $hasParentDir = $firstEntry !== false && (
+                strpos($firstEntry, $safeSlug . '/') === 0 ||
+                ($existingDirName !== null && strpos($firstEntry, $existingDirName . '/') === 0)
+            );
             
             if ($hasParentDir) {
-                // Le ZIP contient déjà le dossier parent, extraire directement
-                $zip->extractTo($targetDir);
+                // Si le ZIP a un sous-dossier, l'extraire dans un dossier temporaire pour normaliser le nom cible
+                $tempExtract = CACHE_PATH . 'ext_' . uniqid() . DS;
+                @mkdir($tempExtract, 0755, true);
+                $zip->extractTo($tempExtract);
+                $zip->close();
+                
+                // Détecter le sous-dossier extrait
+                $subDirs = glob($tempExtract . '*', GLOB_ONLYDIR);
+                $extractedSubDir = !empty($subDirs) ? $subDirs[0] : null;
+                
+                if ($extractedSubDir && is_dir($extractedSubDir)) {
+                    if (!is_dir($pluginDir)) {
+                        @mkdir($pluginDir, 0755, true);
+                    }
+                    $this->copyDirectoryRecursive($extractedSubDir, $pluginDir);
+                }
+                $this->removeDirectoryRecursive($tempExtract);
             } else {
                 // Le ZIP contient les fichiers à la racine, créer le dossier et extraire dedans
                 if (!is_dir($pluginDir)) {
                     mkdir($pluginDir, 0755, true);
                 }
                 $zip->extractTo($pluginDir);
+                $zip->close();
             }
-            
-            $zip->close();
 
-            $extractedDir = $hasParentDir ? ($targetDir . $safeSlug) : rtrim($pluginDir, DS);
+            $extractedDir = rtrim($pluginDir, DS);
 
             // Mettre à jour l'horodatage des fichiers extraits pour forcer l'invalidation des caches
             $this->touchDirectoryRecursive($extractedDir);
@@ -331,6 +368,36 @@ class MarketPlaceManager
                 @touch($item->getPathname());
             }
         } catch (\Throwable $e) {}
+    }
+
+    protected function removeDirectoryRecursive(string $dir): bool
+    {
+        if (!is_dir($dir)) {
+            return true;
+        }
+        $files = array_diff(scandir($dir) ?: [], ['.', '..']);
+        foreach ($files as $file) {
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+            is_dir($path) ? $this->removeDirectoryRecursive($path) : @unlink($path);
+        }
+        return @rmdir($dir);
+    }
+
+    protected function copyDirectoryRecursive(string $src, string $dst): void
+    {
+        if (!is_dir($dst)) {
+            @mkdir($dst, 0755, true);
+        }
+        $files = array_diff(scandir($src) ?: [], ['.', '..']);
+        foreach ($files as $file) {
+            $srcPath = $src . DIRECTORY_SEPARATOR . $file;
+            $dstPath = $dst . DIRECTORY_SEPARATOR . $file;
+            if (is_dir($srcPath)) {
+                $this->copyDirectoryRecursive($srcPath, $dstPath);
+            } else {
+                @copy($srcPath, $dstPath);
+            }
+        }
     }
 
     protected function runAfterUpdatePlugin(MarketPlaceRessource $ressource)

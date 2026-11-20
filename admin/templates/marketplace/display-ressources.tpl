@@ -20,6 +20,7 @@
         <button type="button" class="market-cat-pill" data-cat="media"><i class="fa-solid fa-photo-film"></i> <span>Médias & Outils</span> <span class="pill-count"></span></button>
         <button type="button" class="market-cat-pill" data-cat="system"><i class="fa-solid fa-shield-halved"></i> <span>Système</span> <span class="pill-count"></span></button>
         <button type="button" class="market-cat-pill market-cat-updates" data-cat="updates"><i class="fa-solid fa-rotate"></i> <span>Mises à jour</span> <span class="pill-count"></span></button>
+        <button type="button" class="market-cat-pill market-cat-exclusive" data-cat="exclusive" style="display:none;"><i class="fa-solid fa-crown"></i> <span>Mes exclusivités</span> <span class="pill-count"></span></button>
     </div>
 </div>
 {% endif %}
@@ -27,12 +28,13 @@
 <div class="market-list">
     {% if ressources %}
         {% for ressource in ressources %}
-            <div class="market-card market-item {% if ressource.updateNeeded() %}has-update{% endif %}"
+            <div class="market-card market-item {% if ressource.updateNeeded() %}has-update{% endif %} {% if ressource.isExclusive %}is-exclusive{% endif %}"
                  data-slug="{{ressource.slug}}"
                  data-type="{{ressource.type}}"
                  data-category="{{ressource.getCategory()}}"
                  data-name="{{ressource.name}}"
-                 data-desc="{{ressource.description}}">
+                 data-desc="{{ressource.description}}"
+                 data-exclusive="{% if ressource.isExclusive %}1{% else %}0{% endif %}">
                 
                 <!-- En-tête de carte : Catégorie + Statut d'installation -->
                 <div class="market-card-top">
@@ -40,6 +42,11 @@
                         <i class="{{ressource.getCategoryIcon()}}"></i> {{ressource.getCategoryLabel()}}
                     </span>
                     <div class="market-card-badges">
+                        {% if ressource.isExclusive %}
+                            <span class="market-badge-exclusive" title="{{ressource.exclusiveLabel|default('Exclusivité privée associée à votre jeton')}}">
+                                <i class="fa-solid fa-crown"></i> Exclusif
+                            </span>
+                        {% endif %}
                         {% if ressource.updateNeeded() %}
                             {% if ressource.isSecurityPatch() %}
                                 <span class="market-badge-patch" title="Correctif de sécurité disponible">

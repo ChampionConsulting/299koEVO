@@ -26,16 +26,28 @@ function initMarketplaceToolbars() {
         const isThemeList = Array.from(items).every(item => item.getAttribute('data-type') === 'theme');
         const categoriesBar = toolbar.querySelector('.market-categories-bar');
         if (isThemeList && categoriesBar) {
-            categoriesBar.style.display = 'none';
+            if (counts.exclusive > 0) {
+                catPills.forEach(function (pill) {
+                    const cat = pill.getAttribute('data-cat');
+                    if (cat !== 'all' && cat !== 'exclusive' && cat !== 'updates') {
+                        pill.style.display = 'none';
+                    }
+                });
+            } else {
+                categoriesBar.style.display = 'none';
+            }
         }
 
         // Calculate counts per category
-        const counts = { all: items.length, updates: 0 };
+        const counts = { all: items.length, updates: 0, exclusive: 0 };
         items.forEach(function (item) {
             const cat = item.getAttribute('data-category') || 'system';
             counts[cat] = (counts[cat] || 0) + 1;
             if (item.classList.contains('has-update')) {
                 counts.updates++;
+            }
+            if (item.getAttribute('data-exclusive') === '1') {
+                counts.exclusive++;
             }
         });
 
@@ -50,7 +62,9 @@ function initMarketplaceToolbars() {
                 pill.appendChild(countBadge);
             }
             countBadge.textContent = cnt;
-            if (cnt === 0 && cat !== 'all' && cat !== 'updates') {
+            if (cat === 'exclusive') {
+                pill.style.display = counts.exclusive > 0 ? 'inline-flex' : 'none';
+            } else if (cnt === 0 && cat !== 'all' && cat !== 'updates') {
                 pill.style.display = 'none';
             }
             if (cat === 'updates' && counts.updates === 0) {
@@ -68,6 +82,7 @@ function initMarketplaceToolbars() {
             items.forEach(function (item) {
                 const itemCat = item.getAttribute('data-category') || '';
                 const isUpdate = item.classList.contains('has-update');
+                const isExclusive = item.getAttribute('data-exclusive') === '1';
                 const name = (item.getAttribute('data-name') || '').toLowerCase();
                 const desc = (item.getAttribute('data-desc') || '').toLowerCase();
                 const slug = (item.getAttribute('data-slug') || '').toLowerCase();
@@ -77,6 +92,8 @@ function initMarketplaceToolbars() {
                     matchesCat = true;
                 } else if (currentCat === 'updates') {
                     matchesCat = isUpdate;
+                } else if (currentCat === 'exclusive') {
+                    matchesCat = isExclusive;
                 } else {
                     matchesCat = (itemCat === currentCat);
                 }
