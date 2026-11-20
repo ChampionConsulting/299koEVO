@@ -143,7 +143,7 @@ class PageController extends PublicController
             'crisp_website_id' => '',
             'discord_invite_url' => 'https://discord.gg/8Rpsm2zWH',
             'whatsapp_phone' => '33766471292',
-            'whatsapp_message' => "Bonjour, je vous contacte depuis Vivre-Bourges.fr concernant mon établissement : ",
+            'whatsapp_message' => "Bonjour, je vous contacte depuis " . ($this->core->getConfigVal("siteName") ?: "le site") . " concernant mon établissement : ",
         ];
         $chatConfigFile = ROOT . 'data/config_pro_chat.json';
         if (file_exists($chatConfigFile)) {
@@ -155,7 +155,7 @@ class PageController extends PublicController
 
         $response = new PublicResponse();
         $response->setTitle('<i class="fa-solid fa-store"></i> Espace Professionnels & Artisans');
-        $response->setMetaDescription("Découvrez comment revendiquer gratuitement votre fiche établissement sur Vivre-Bourges.fr et développer votre visibilité locale.");
+        $response->setMetaDescription("Découvrez comment revendiquer gratuitement votre fiche établissement sur " . ($this->core->getConfigVal("siteName") ?: "notre site") . " et développer votre visibilité locale.");
         $tpl = new Template($tplFile);
         $tpl->set('proChatWhatsappUrl', 'https://wa.me/' . preg_replace('/[^0-9]/', '', $chatConfig['whatsapp_phone']) . '?text=' . rawurlencode($chatConfig['whatsapp_message']));
         $tpl->set('proChatWhatsappPhone', $chatConfig['whatsapp_phone']);
@@ -234,13 +234,13 @@ class PageController extends PublicController
                     ]
                 ],
                 'footer' => [
-                    'text' => 'Vivre-Bourges.fr • Espace Pro',
+                    'text' => ($this->core->getConfigVal('siteName') ?: '299Ko CMS') . ' • Espace Pro',
                 ],
                 'timestamp' => date('c'),
             ];
 
             $payload = json_encode([
-                'username' => 'Vivre-Bourges Pro',
+                'username' => ($this->core->getConfigVal('siteName') ?: '299Ko') . ' Pro',
                 'embeds' => [$embed],
             ]);
 

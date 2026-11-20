@@ -254,7 +254,7 @@ class AdminDashboardController extends AdminController
         $curr = $cached['data']['current'];
         return [
             'temp'     => round($curr['temperature_2m'] ?? 0),
-            'city'     => $cached['city'] ?? 'Bourges',
+            'city'     => $cached['city'] ?? ($this->core->getConfigVal('siteCity') ?: 'Paris'),
             'humidity' => $curr['relative_humidity_2m'] ?? 0,
             'wind'     => round($curr['wind_speed_10m'] ?? 0),
             'code'     => (int)($curr['weather_code'] ?? 0),

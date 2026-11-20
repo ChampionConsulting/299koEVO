@@ -1,4 +1,4 @@
-# robots.txt - Vivre-Bourges.fr
+# robots.txt - 299Ko EVO
 User-agent: *
 Allow: /
 
@@ -6,6 +6,3 @@ Allow: /
 Disallow: /admin/
 Disallow: /users/
 Disallow: /messaging/
-
-# Sitemap XML canonique
-Sitemap: https://vivre-bourges.fr/sitemap.xml
