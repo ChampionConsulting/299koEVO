@@ -112,7 +112,7 @@ class TelemetryService
 
         // Mémoriser la tentative (réussie ou non)
         $state['last_attempt'] = time();
-        file_put_contents($this->stateFile, json_encode($state, JSON_PRETTY_PRINT));
+        file_put_contents($this->stateFile, json_encode($state, JSON_PRETTY_PRINT), LOCK_EX);
 
         // Envoyer les données
         return $this->send($level, $isFirstInstall);
@@ -212,7 +212,7 @@ class TelemetryService
         if ($isFirstInstall) {
             $state['first_sent'] = time();
         }
-        file_put_contents($this->stateFile, json_encode($state, JSON_PRETTY_PRINT));
+        file_put_contents($this->stateFile, json_encode($state, JSON_PRETTY_PRINT), LOCK_EX);
     }
 
     /**

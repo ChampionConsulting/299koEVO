@@ -439,7 +439,7 @@ class Database implements SqlDriverInterface
              return false;
         }
 
-        $res = file_put_contents($envJsonFile, $json);
+        $res = file_put_contents($envJsonFile, $json, LOCK_EX);
         if ($res === false) {
             \Core\Storage\EmergencyLogger::log("DB_SAVE_ERROR: Failed to write to $envJsonFile (Check permissions)");
             return false;

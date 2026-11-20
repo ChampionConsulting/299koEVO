@@ -68,7 +68,7 @@ class PolicyCache
             'expiry' => time() + $ttl,
             'created_at' => time()
         ];
-        @file_put_contents($file, json_encode($data));
+        @file_put_contents($file, json_encode($data), LOCK_EX);
     }
 
     /**

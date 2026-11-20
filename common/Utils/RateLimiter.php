@@ -57,7 +57,7 @@ class RateLimiter
         }
 
         $data['count']++;
-        @file_put_contents($file, json_encode($data));
+        @file_put_contents($file, json_encode($data), LOCK_EX);
         return true;
     }
 

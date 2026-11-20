@@ -162,7 +162,7 @@ class Logger
 
             $logFile = $this->getLogFilePath();
             $this->rotateLogFileIfNeeded($logFile);
-            file_put_contents($logFile, $formattedMessage, FILE_APPEND);
+            file_put_contents($logFile, $formattedMessage, FILE_APPEND | LOCK_EX);
         } finally {
             self::$isLogging = false;
         }

@@ -278,7 +278,7 @@ class ContentTypeManager
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
         }
-        file_put_contents($this->getCustomTypesFile(), json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        file_put_contents($this->getCustomTypesFile(), json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
         $this->types[$def->id] = $def;
         $this->persistedTypeIds[$def->id] = true;
         return $def;
@@ -297,7 +297,7 @@ class ContentTypeManager
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
         }
-        file_put_contents($this->getCustomTypesFile(), json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        file_put_contents($this->getCustomTypesFile(), json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
         unset($this->types[$typeId], $this->persistedTypeIds[$typeId]);
         return $existed;
     }
