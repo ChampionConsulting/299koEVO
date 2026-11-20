@@ -23,5 +23,14 @@ release.sh
 !installer.sh
 
 # Rapports et notes locales
-RAPPORT_ANNONCES_ECOMMERCE.md
+RAPPORT_*.md
+*.local.md
+*.tmp
+
+# Fichiers d'agents IA et règles internes
+AGENTS.md
+GEMINI.md
+CLAUDE.md
+.agents/
+
 
