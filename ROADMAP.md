@@ -6,58 +6,101 @@
 
 ## 🇫🇷 Feuille de Route (2026 - 2027)
 
-Cette feuille de route présente les grandes orientations fonctionnelles et techniques prévues pour l'écosystème 299koEVO.
+### 🧱 1. Le Socle Acquis du CMS (Ne pas réinventer ce qui existe)
 
-### ✅ Réalisé récemment (v0.3.x)
-- [x] **Moteur multi-stockage agnostique** : Support natif fichiers JSON, SQLite et MySQL/MariaDB avec bascule fluide.
-- [x] **Antispam souverain (`299nobot`)** : Challenge cryptographique HMAC-SHA256, PoW adaptative dans le navigateur, zéro reCAPTCHA ni pistage tiers.
-- [x] **Sécurisation CSRF intégrale** : Enregistrement de `{{SHOW.tokenField}}` et vérification stricte `Csrf::validate()` sur l'ensemble des formulaires et contrôleurs POST de l'écosystème (publics et exclusifs).
-- [x] **Marketplace Hub intégré** : Téléchargement, installation et mise à jour des plugins et thèmes en 1 clic.
-- [x] **Thème sombre universel** : Intégration complète du Dark Mode dans l'administration et les thèmes officiels.
-- [x] **Plateforme Petites Annonces C2C** : Formulaire de dépôt public, modération administrative et espace membre.
-- [x] **E-commerce & Passerelle de paiement** : Tunnel de commande complet avec intégration Stripe Checkout et suivi colis.
+| Composant | État & Rôle |
+| :--- | :--- |
+| **Multi-stockage JSON / SQLite / MySQL** | ✅ **Opérationnel** avec bascule transparente (`StorageManager`). |
+| **`JsonActiveRecord`** | 🔄 **Actif**, à renforcer (transactions, verrous concurrents). |
+| **Sécurité CSRF** | ✅ **Déployée à 100%** sur l'ensemble des formulaires et contrôleurs POST de l'écosystème. |
+| **Antispam souverain (`299nobot`)** | ✅ **Opérationnel** (PoW navigateur, HMAC-SHA256, zéro reCAPTCHA). |
+| **Politiques d'accès ABAC** | ✅ **Opérationnel** (`AccessPolicyEvaluator`, `ConditionContext`). |
+| **Gestionnaire d'événements (`HookManager`)**| ✅ **Opérationnel** (`addHook`, `callHook`, `hooks.json`). |
+| **Gestionnaire d'API (`ApiManager`)** | ✅ **Opérationnel** (`Core\Api\ApiManager`, routes API). |
+| **Passerelle de Paiement centrale** | ✅ **Opérationnelle** (`PaymentDriverInterface`, hub central `paiement`). |
+| **Marketplace Hub intégré** | ✅ **Opérationnel** (catalogue officiel et installation 1-clic). |
+| **Mode Test & Bac à sable (`AdminTestMode`)** | ✅ **Opérationnel** (simulation en mémoire de session). |
+| **Traductions & Localisation** | ✅ **Opérationnel** (fichiers `.ini` modulaires). |
 
 ---
 
-### 🎯 Prochaines étapes & Évolutions de l'Architecture
+### 🏛️ 2. L'Architecture Cible en 5 Piliers
 
-#### 1. Consolidation du Cœur & Abstraction de Données
-- [ ] **Évolution de `JsonActiveRecord` (Haute priorité)** :
-  - Support des transactions et verrous d'écriture concurrents sur JSON plat.
-  - Système de migrations versionnées (`001_init.php`) avec capacités de rollback.
-  - Harmonisation complète pour migrer les 10 plugins SQL direct vers l'ORM agnostique.
-- [ ] **Centre de Gestion des Hooks & Événements (`EventCenter` / `HookManager`)** :
-  - Catalogue des hooks disponibles avec documentation des contrats d'entrée/sortie.
-  - Inspecteur visuel d'administration des écouteurs et priorité d'exécution.
-- [ ] **Inspecteur de Permissions & Politiques d'Accès (`AccessPolicyEvaluator`)** :
-  - Matrice visuelle interactive dans l'admin pour tester les règles ABAC selon le profil utilisateur.
+```mermaid
+flowchart TD
+    CORE["⚡ NOYAU DU CMS (Core)\nStockage · Sécurité · Hooks · API · Permissions · Routage"]
+    INFRA["🛠️ INFRASTRUCTURE\nTaskScheduler · BackupManager · SystemMonitor · DataInspector"]
+    DEV["💻 DÉVELOPPEURS\nPluginInspector · PluginSandbox · Marketplace · Workflow"]
+    FEATURES["🧩 FONCTIONNALITÉS\nBlog · Commerce · Social · Agenda · POI & Territoire"]
+    EXP["🎨 EXPÉRIENCE\nAdministration · Thèmes · Traductions · MediaManager"]
 
-#### 2. Nouveaux Modules & Outils Développeurs
-- [ ] **`PluginInspector`** : Analyseur statique d'extensions (détection des dépendances circulaires, validation CSRF, hooks utilisés).
-- [ ] **`BackupManager` & `SiteExporter`** : Exportation 1-clic et restauration complète (code, données, médias) en archive ZIP sécurisée pour déménager de serveur en toute indépendance.
-- [ ] **`ApiManager`** : Gestionnaire de jetons d'API personnels, limitation de débit (*rate-limiting*) et documentation OpenAPI.
-- [ ] **`Workflow`** : Orchestrateur d'actions automatiques (ex: publication d'article -> notification push -> flux RSS -> partage SocialFeed).
-- [ ] **`TranslationManager`** : Interface de traduction comparative multilingue détectant automatiquement les chaînes manquantes.
-- [ ] **`PluginSandbox`** : Environnement de test isolé pour tester un plugin sans toucher à l'instance réelle.
+    CORE --> INFRA
+    CORE --> DEV
+    CORE --> FEATURES
+    CORE --> EXP
+```
+
+---
+
+### 🚀 3. Les Trois Chantiers Prioritaires
+
+#### 1. `PluginInspector` (Priorité Haute) — Rendre l'écosystème intelligible
+- [ ] Graphe des dépendances entre extensions.
+- [ ] Détection des dépendances fantômes ou cassées.
+- [ ] Vérification de la compatibilité des versions du Core requises.
+- [ ] Détection des hooks non enregistrés et contrats non respectés.
+- [ ] Analyse des routes, formulaires et conformité des permissions.
+- [ ] Rapport de santé global avant toute installation ou mise à jour.
+
+#### 2. `TaskScheduler` (Priorité Haute) — Autonomie d'exécution en arrière-plan
+- [ ] Ordonnanceur natif pour tâches périodiques et exécutions différées.
+- [ ] File d'attente persistante avec relance automatique après échec.
+- [ ] Verrouillage anti-concurrence contre les exécutions simultanées.
+- [ ] Historique et métriques d'exécution.
+- [ ] Déblocage des capacités asynchrones pour `newsletter`, `LocalFeed`, `BackupManager` et `Workflow`.
+
+#### 3. `DataInspector` (Priorité Haute) — Cohérence des données multi-moteurs
+- [ ] Détection des entités orphelines et références croisées cassées.
+- [ ] Nettoyage des doublons et validation des schémas JSON et SQLite.
+- [ ] Comparateur d'intégrité entre les moteurs de stockage.
+
+---
+
+### 🎯 4. Modules d'Infrastructure & Évolutions Complémentaires
+
+#### Infrastructure & Système
+- [ ] **`SystemMonitor`** : Dashboard technique en temps réel (temps de réponse PHP, mémoire, temps des hooks, requêtes SQL).
+- [ ] **`BackupManager` & `SiteExporter`** : Sauvegarde 1-clic et migration intégrale (code + data + médias) en ZIP sécurisé.
+- [ ] **`MediaManager`** : Médiathèque transversale avec détection des fichiers inutilisés, conversion WebP et gestion des droits.
+
+#### Outils Développeurs & Automatisation
+- [ ] **`Workflow`** : Orchestrateur d'événements sans code (ex: *Article publié -> Notification Push -> RSS -> Post SocialFeed*).
+- [ ] **`TranslationManager`** : Interface visuelle de comparaison multilingue avec détection des chaînes manquantes.
+- [ ] **`PluginSandbox`** : Environnement de test éphémère pour exécuter un plugin sans impacter le site réel.
 
 ---
 
 ## 🇬🇧 Roadmap (2026 - 2027)
 
-### ✅ Recently Completed (v0.3.x)
-- [x] **Agnostic Multi-Storage Engine**: JSON flat-file, SQLite, and MySQL/MariaDB support.
-- [x] **Privacy-First Antispam (`299nobot`)**: HMAC-SHA256 token signing + browser Proof-of-Work without Google reCAPTCHA.
-- [x] **Ecosystem-Wide CSRF Enforcement**: Automatic `{{SHOW.tokenField}}` form embedding and `Csrf::validate()` checks across all POST handlers.
-- [x] **Built-in Marketplace Hub**: One-click install and update system for plugins and themes.
-- [x] **Universal Dark Mode**: Seamless theme switching in both frontend and admin panel.
-- [x] **C2C Classified Ads Platform**: Public submission, admin moderation, and seller dashboard.
-- [x] **E-Commerce & Payment Gateway**: Checkout flow with Stripe integration and parcel tracking.
+### 🧱 1. Established Foundation (Building Upon Existing Assets)
 
-### 🎯 Upcoming Milestones
-- [ ] **`JsonActiveRecord` Enhancements**: Concurrency locking, versioned migration schema, and complete ORM alignment for legacy SQL modules.
-- [ ] **`EventCenter` & Hook Registry**: Hook catalog, contracts documentation, and visual interaction inspector.
-- [ ] **`PluginInspector`**: Static code audit tool for extensions (dependencies, circular references, security compliance).
-- [ ] **`BackupManager` & `SiteExporter`**: 1-click snapshot export and seamless migration between servers.
-- [ ] **`ApiManager`**: Developer API token management, rate-limiting, and auto-generated OpenAPI endpoints.
-- [ ] **`Workflow` Engine**: Event-driven automation across plugins without tight coupling.
-- [ ] **`TranslationManager`**: Visual localization tool for multi-language dictionary sync.
+- **Multi-Storage Engine**: JSON flat-file, SQLite, MySQL/MariaDB ready.
+- **CSRF Protection**: 100% enforced across all public and exclusive POST forms and controllers.
+- **Sovereign Antispam (`299nobot`)**: Browser PoW + HMAC-SHA256 challenges active.
+- **ABAC Engine**: `AccessPolicyEvaluator` and `ConditionContext` operational.
+- **Core Event Bus**: `HookManager` and event hooks active.
+- **Payment Hub**: Centralized `PaymentDriverInterface` abstraction.
+
+### 🚀 2. Top Three Priority Pillars
+
+1. **`PluginInspector` (High Priority)**: Extension static analysis, dependency graphs, orphan detection, and route/hook validation.
+2. **`TaskScheduler` (High Priority)**: Background job queue, recurring tasks, concurrency locks, and retry mechanism.
+3. **`DataInspector` (High Priority)**: Cross-storage consistency checks, broken reference detection, and data health verification.
+
+### 🎯 3. Next Milestones
+
+- **`SystemMonitor`**: Technical telemetry dashboard (PHP timing, memory, hook execution speed).
+- **`BackupManager` & `SiteExporter`**: 1-click snapshot export and seamless migration between servers.
+- **`MediaManager`**: Centralized asset library with orphan detection and WebP processing.
+- **`Workflow`**: Inter-plugin event orchestrator.
+- **`TranslationManager`**: Graphical dictionary diff and missing keys detector.
