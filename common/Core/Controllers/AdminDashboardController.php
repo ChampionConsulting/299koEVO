@@ -308,11 +308,15 @@ class AdminDashboardController extends AdminController
 
         if (PluginsManager::isActivePlugin('LiveChat') && $pdo) {
             try {
-                $openCount = (int)$pdo->query("SELECT COUNT(*) FROM vb_livechat_conversations WHERE status = 'open'")->fetchColumn();
+                $openCount = (int)$pdo->query("
+                    SELECT COUNT(*) FROM vb_livechat_conversations c 
+                    WHERE c.status = 'open' 
+                      AND EXISTS (SELECT 1 FROM vb_livechat_messages m WHERE m.conversation_id = c.id AND m.sender = 'visitor')
+                ")->fetchColumn();
                 $unreadCount = (int)$pdo->query("SELECT COALESCE(SUM(unread_admin), 0) FROM vb_livechat_conversations")->fetchColumn();
                 $cards[] = [
                     'title'  => 'LiveChat Direct',
-                    'value'  => $unreadCount > 0 ? "{$unreadCount} non lu(s)" : "{$openCount} ouverte(s)",
+                    'value'  => $unreadCount > 0 ? "{$unreadCount} non lu(s)" : "{$openCount} active(s)",
                     'sub'    => "{$openCount} conversation(s) active(s)",
                     'icon'   => 'fa-solid fa-comments',
                     'url'    => '/admin/livechat',
