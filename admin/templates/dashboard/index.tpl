@@ -311,6 +311,5 @@
         <span><i class="fa-solid fa-code-branch"></i> 299koEVO v{{cmsVersion}}</span>
         <span><i class="fa-brands fa-php"></i> PHP {{phpVersion}}</span>
         <span><i class="fa-solid fa-server"></i> {{storageDriver}}</span>
-        <span><i class="fa-solid fa-shield"></i> Architecture Modulaire & Layered CSS</span>
     </div>
 </div>
