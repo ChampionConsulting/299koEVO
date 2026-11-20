@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions générales & Entraide / General Q&A
+    url: https://github.com/NemStudio18/299koEVO/discussions/categories/aide-et-installation
+    about: Posez vos questions d'installation, de configuration et d'hébergement sur GitHub Discussions.
+  - name: 💡 Suggérer une idée ou discuter d'une évolution / Suggest an Idea
+    url: https://github.com/NemStudio18/299koEVO/discussions/categories/idees-et-suggestions
+    about: Partagez vos propositions et échangez avec la communauté avant d'ouvrir une demande formelle.
+  - name: 🚀 Présentez votre site / Show and Tell
+    url: https://github.com/NemStudio18/299koEVO/discussions/categories/presentez-votre-site
+    about: Montrez vos créations et réalisations fonctionnant sous 299koEVO !
+  - name: 🔒 Signaler une faille de sécurité / Security Vulnerability
+    url: https://github.com/NemStudio18/299koEVO/blob/main/SECURITY.md
+    about: Ne signalez pas de failles publiquement. Consultez notre procédure confidentielle dans SECURITY.md.

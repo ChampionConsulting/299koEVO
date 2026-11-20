@@ -66,3 +66,4 @@ Thank you for your interest in **299koEVO**! As an open-source, independent, and
 - **Dark Mode Support**: Every frontend and admin view must support `:root[data-theme="dark"]`.
 - **Privacy & Security**: Always check CSRF tokens, sanitize inputs/outputs, and never inject third-party trackers or CDNs that violate user privacy.
 - **Git Hygiene**: Keep commits focused and descriptive using conventional commit formats (`feat:`, `fix:`, `refactor:`).
+

@@ -22,3 +22,4 @@ Exemples de comportements inacceptables :
 ## Application / Enforcement
 
 Les cas de comportement abusif, harcelant ou inacceptable peuvent être signalés aux responsables du projet à l'adresse **`maximeblanc@flexcb.fr`**. Toutes les plaintes seront examinées et feront l'objet d'une réponse rapide et juste, dans le respect de la confidentialité du plaignant.
+

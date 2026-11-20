@@ -52,3 +52,4 @@ Cette feuille de route présente les grandes orientations fonctionnelles et tech
 - [ ] **Headless REST API v1**: JSON endpoints for mobile apps and decoupled frontends.
 - [ ] **Webhooks System**: Event triggers for modern web automation.
 - [ ] **Plugin Developer CLI**: Rapid scaffolding tool for module authors.
+

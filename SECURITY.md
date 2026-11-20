@@ -81,3 +81,4 @@ If you discover a potential vulnerability (XSS, CSRF, authentication bypass, SQL
 - **Assessment**: Severity evaluation and reproduction within 3–5 business days.
 - **Fix release**: Coordinated patch released via GitHub and the Marketplace Hub.
 - **Credit**: With your permission, you will be credited in the release notes.
+
