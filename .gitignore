@@ -22,3 +22,6 @@ release.sh
 *.sh
 !installer.sh
 
+# Rapports et notes locales
+RAPPORT_ANNONCES_ECOMMERCE.md
+
