@@ -1,93 +1,98 @@
-# Gouvernance & Pérennité / Project Governance & Longevity
+# Gouvernance du Projet / Project Governance — 299koEVO
 
-[🇫🇷 Français](#-gouvernance-du-projet-299koevo-français) • [🇬🇧 English](#-project-governance--longevity-english)
+[🇫🇷 Français](#-gouvernance-du-projet-299koevo-français) • [🇬🇧 English](#-project-governance--nemstudio18-english)
 
 ---
 
 ## 🇫🇷 Gouvernance du Projet 299koEVO (Français)
 
-### 1. Philosophie & Indépendance
+### 1. Philosophie du modèle : Mainteneur Principal Unique & Ouverture Communautaire
 
-**299koEVO** est un projet logiciel libre et indépendant. Il n'est pas financé par une grande entreprise commerciale ni lié à des intérêts publicitaires.  
-Notre boussole repose sur trois principes non négociables :
-1. **Légèreté** : Ne jamais imposer une infrastructure disproportionnée ou des dépendances lourdes.
-2. **Liberté** : Laisser l'utilisateur maître de ses contenus, de ses choix d'hébergement et de ses données.
-3. **Indépendance** : Garantir l'autonomie du web personnel et associatif sans dépendance aux plateformes fermées.
+Le projet **299koEVO** repose sur un modèle de gouvernance pragmatique, clair et pérenne : **un mainteneur principal unique garant du cap, avec une ouverture totale et bienveillante aux contributions externes.**
+
+Garder le contrôle du projet ne signifie pas devoir tout développer seul. C'est l'assurance d'une cohérence technique, architecturale et éthique sur le long terme :
+
+> 299koEVO est un projet maintenu de façon indépendante, dirigé par son fondateur, **NemStudio18**.
+>
+> Le projet accueille avec enthousiasme les contributions externes, les retours techniques et la participation de la communauté. Toutefois, l'autorité finale sur les orientations du projet, l'architecture, la feuille de route (*roadmap*), les versions officielles (*releases*), les licences et la gouvernance appartient exclusivement au fondateur.
+>
+> Contribuer au projet ne confère pas automatiquement de droits d'administration sur les dépôts ni de pouvoir décisionnel contraignant.
+>
+> Ce modèle a pour but de préserver l'indépendance, la cohérence et la pérennité de 299koEVO tout en encourageant une communauté de contributeurs active, accueillante et respectée.
 
 ---
 
 ### 2. Rôles et Responsabilités
 
-| Rôle | Responsabilités |
+| Acteur | Rôle & Responsabilités |
 | :--- | :--- |
-| **Mainteneur Principal** (*Lead Maintainer*) | Responsable de la cohérence architecturale, de la revue finale des Pull Requests, du déploiement des correctifs de sécurité et de la publication des nouvelles versions (*Releases*). |
-| **Contributeurs Réguliers** (*Core Contributors*) | Développeurs, concepteurs de thèmes et rédacteurs de documentation qui participent activement aux revues, maintiennent des modules officiels et guident les nouveaux arrivants. |
-| **Communauté & Utilisateurs** | Utilisateurs qui installent le CMS, partagent leurs retours, signalent des anomalies, proposent des idées d'extensions ou aident d'autres utilisateurs sur les forums de discussion. |
+| **NemStudio18** | **Fondateur, propriétaire du projet et décisionnaire final.** Garant de la vision, de l'indépendance et de l'intégrité de l'écosystème. |
+| **Mainteneur principal** | **NemStudio18**, seul responsable des décisions architecturales finales, de la validation des Pull Requests et de la publication des *releases* officielles. |
+| **Contributeurs** | Toute personne souhaitant proposer du code, corriger des bugs, améliorer la documentation ou créer des thèmes et des plugins. |
+| **Contributeurs réguliers** | Contributeurs reconnus pour la qualité et la constance de leur travail (mise en avant, remerciements officiels), sans pouvoir décisionnel automatique. |
+| **Communauté** | Utilisateurs et passionnés qui proposent des idées, discutent sur le forum, votent de manière informelle et signalent des problèmes. |
 
 ---
 
-### 3. Prise de Décision Technique
+### 3. Les Règles de Gouvernance
 
-Les décisions techniques se prennent de façon transparente et pragmatique :
-- **Idées & Discussions ouvertes** : Toute proposition d'évolution majeure est d'abord débattue publiquement sur [GitHub Discussions](https://github.com/NemStudio18/299koEVO/discussions).
-- **Principe de frugalité** : Avant d'ajouter une fonctionnalité dans le cœur, nous nous posons toujours la question : *« Cela peut-il être réalisé sous forme de plugin ? »*. Si oui, cela doit rester une extension pour préserver la légèreté du noyau CMS.
-- **Sécurité et stabilité** : Aucun compromis n'est fait sur la sécurité (CSRF, sanitization, antispam souverain) ou sur la rétrocompatibilité des formats de stockage (JSON/SQLite).
-
----
-
-### 4. Continuité & Pérennité du Projet
-
-L'une des plus grandes craintes autour des projets indépendants est le risque d'abandon si le créateur d'origine vient à manquer de temps. 299koEVO est conçu dès le premier jour pour survivre à ses auteurs :
-
-1. **Licence Libre GPLv3 intégrale** : Le code appartient au bien commun. Nul ne peut privatiser 299koEVO.
-2. **Architecture standardisée et sans magie** : Pas de framework monolithique obscur, pas de transpilation opaque. Du PHP moderne, lisible et documenté que n'importe quel développeur PHP peut auditer, réparer et faire évoluer.
-3. **Plan de transmission communautaire** : En cas d'indisponibilité prolongée du mainteneur principal, les accès de gestion GitHub et les dépôts de l'organisation NemStudio18 peuvent être transmis aux contributeurs réguliers les plus actifs pour assurer la publication des correctifs de sécurité et la maintenance du catalogue API.
+1. **Revue des Pull Requests** : Les Pull Requests sont ouvertes à tous. Leur examen et leur acceptation restent à l'entière discrétion de NemStudio18.
+2. **Accès aux dépôts** : Aucune contribution externe ne donne automatiquement accès aux droits d'écriture directs ou à l'administration des dépôts officiels.
+3. **Vision & Arbitrages** : Les décisions concernant l'architecture du cœur, la roadmap, les licences logicielles et l'orientation stratégique appartiennent au fondateur.
+4. **Releases officielles** : Seul NemStudio18 valide, signe et publie les versions stables et les correctifs prioritaires sur GitHub et sur le Hub Marketplace.
+5. **Reconnaissance & Crédit** : Chaque contributeur dont le travail est intégré est systématiquement crédité dans les notes de version et dans la documentation.
+6. **Écoute de la communauté** : Les échanges sur [GitHub Discussions](https://github.com/NemStudio18/299koEVO/discussions) influencent directement les priorités du projet, sans constituer un droit de décision contraignant.
 
 ---
 
-### 5. Comment devenir contributeur régulier ?
+### 4. Pourquoi ce modèle favorise les contributions ?
 
-L'accès au statut de contributeur régulier se fait naturellement par l'implication :
-- Contribuer régulièrement à l'amélioration du cœur ou des plugins officiels.
-- Aider activement les membres dans l'espace d'entraide [GitHub Discussions](https://github.com/NemStudio18/299koEVO/discussions).
-- Maintenir une extension officielle ou contribuer à la documentation.
+Nous voulons que les développeurs et créateurs aient envie de contribuer parce que :
+- **Leurs contributions sont prises au sérieux et examinées avec soin**.
+- **Le code est lisible, propre et sans dépendances superflues**.
+- **Les règles du jeu sont transparentes dès le premier jour**.
+- **Leur travail est publiquement valorisé et crédité**.
+- **Le projet a une direction claire, stable et durable**, à l'abri des conflits d'orientations ou des dérives commerciales.
+
+*« Garder le gouvernail, sans être obligé de ramer tout seul. »*
 
 ---
 
-## 🇬🇧 Project Governance & Longevity (English)
+## 🇬🇧 Project Governance — NemStudio18 (English)
 
-### 1. Philosophy & Independence
+### 1. Governance Model: Single Lead Maintainer & Open Community
 
-**299koEVO** is a free and independent open-source project. It is not backed by a commercial venture or advertising network.  
-Our decision-making is guided by three core values:
-1. **Lightweight**: Never impose disproportionate infrastructure or heavy dependencies.
-2. **Freedom**: Give users full control over their content, hosting, and data.
-3. **Independence**: Empower personal and non-profit websites without locking them into proprietary ecosystems.
+**299koEVO** operates under a transparent, stable, and sustainable governance model: **a single lead maintainer setting the course, combined with open and welcoming external contributions.**
+
+Retaining control does not mean coding alone. It ensures architectural integrity, speed, and privacy principles over the long haul:
+
+> 299koEVO is an independently maintained project led by its founder, **NemStudio18**.
+>
+> The project welcomes external contributions, technical feedback, and community participation. However, final authority over project direction, architecture, roadmap, releases, licensing, and governance remains with the founder.
+>
+> Contribution does not automatically grant maintainership, repository permissions, or decision-making authority.
+>
+> This model is intended to preserve the project's independence, consistency, and long-term sustainability while encouraging an open and welcoming contributor community.
 
 ---
 
 ### 2. Roles & Community Structure
 
-| Role | Responsibilities |
+| Actor | Role & Responsibilities |
 | :--- | :--- |
-| **Lead Maintainer** | Guides architectural design, conducts final PR reviews, releases official security updates, and packages new releases. |
-| **Core Contributors** | Developers, theme designers, and technical writers who review code, maintain official plugins, and mentor newcomers. |
-| **Community Members** | Users who deploy 299koEVO, showcase their websites, provide feedback, report bugs, and help fellow users in GitHub Discussions. |
+| **NemStudio18** | **Founder, project owner, and final decision-maker.** Guardian of the project vision, independence, and ecosystem integrity. |
+| **Lead Maintainer** | **NemStudio18**, solely responsible for final technical decisions, Pull Request merges, security patches, and official releases. |
+| **Contributors** | Anyone submitting code, fixing bugs, writing documentation, or designing themes and plugins. |
+| **Core Contributors** | Recognized members celebrated for sustained high-quality contributions, without automatic governance authority. |
+| **Community** | Users, webmasters, and advocates who share feedback, report issues, suggest ideas, and participate in discussions. |
 
 ---
 
-### 3. Technical Decision-Making
+### 3. Core Governance Rules
 
-We believe in open and rational decision-making:
-- **Open RFCs and Discussions**: Major architectural changes are proposed and evaluated openly in [GitHub Discussions](https://github.com/NemStudio18/299koEVO/discussions).
-- **Modularity First**: Whenever a new feature is considered, we evaluate whether it belongs in Core or in a Plugin. If it can be a plugin, it stays a plugin to keep the core lean and fast.
-- **Zero Compromise on Security & Privacy**: Strict CSRF tokens, sovereign antispam, and data sovereignty always take precedence.
-
----
-
-### 4. Project Longevity & Continuity
-
-An independent project must not rely solely on a single individual. 299koEVO is built to last:
-1. **GPLv3 Licensing**: The codebase is public domain and protected by copyleft. It can never be closed or privatized.
-2. **Standards-based Code**: Clean, modern PHP without framework lock-in or obscure build pipelines. Any PHP developer can read, audit, and patch the CMS.
-3. **Community Succession Plan**: In the event of prolonged unavailability of the lead maintainer, governance rights and official repository management can transition to the most active core contributors.
+1. **Pull Request Review**: Pull requests are open to everyone; merges are conducted at the sole discretion of NemStudio18.
+2. **Repository Permissions**: Contributions do not grant write access or administrative privileges to official repositories.
+3. **Direction & Roadmap**: Strategic decisions regarding architecture, roadmap, licensing, and ecosystem evolution belong to the founder.
+4. **Official Releases**: Official releases and Marketplace packages are exclusively validated and published by NemStudio18.
+5. **Attribution & Credit**: All merged contributions are prominently attributed and credited in release notes.
+6. **Community Voice**: Discussions on [GitHub Discussions](https://github.com/NemStudio18/299koEVO/discussions) inform roadmap priorities without constituting binding mandates.
