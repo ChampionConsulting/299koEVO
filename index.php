@@ -108,6 +108,27 @@ if ($clientIp !== '' && !in_array($clientIp, ['127.0.0.1', '::1', '192.168.1.178
 
 include_once(ROOT . 'common' . DS . 'common.php');
 
+// Normalisation canonique des URLs (SEO 301 Redirect) : supprime trailing slash et slashes multiples
+if (isset($_SERVER['REQUEST_URI']) && in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+    $rawUri = $_SERVER['REQUEST_URI'];
+    $path = parse_url($rawUri, PHP_URL_PATH);
+    if ($path !== null && strlen($path) > 1) {
+        $normalizedPath = preg_replace('#/{2,}#', '/', $path);
+        $basePath = rtrim(str_replace('\\', '/', defined('BASE_PATH') ? BASE_PATH : ''), '/');
+        $cleanPath = rtrim($normalizedPath, '/');
+        if ($cleanPath === '') {
+            $cleanPath = '/';
+        }
+        if ($cleanPath !== $basePath && ($cleanPath !== $path || $normalizedPath !== $path)) {
+            $query = parse_url($rawUri, PHP_URL_QUERY);
+            $redirectUrl = $cleanPath . ($query !== null && $query !== '' ? '?' . $query : '');
+            header("HTTP/1.1 301 Moved Permanently");
+            header("Location: " . $redirectUrl);
+            exit;
+        }
+    }
+}
+
 if (!$core->isInstalled()) {
     header('location: install.php');
     die();
