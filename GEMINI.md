@@ -98,3 +98,4 @@ Avant de confirmer à l'utilisateur qu'une action est terminée :
 - [ ] Les fichiers sur `299ko.flexcb.fr` et/ou `vivre-bourges.fr` sont synchronisés.
 - [ ] Les droits d'accès et d'exécution serveur sont conformes.
 - [ ] Les pages web ou points de terminaison concernés ont été testés (aucun 500, aucun crash JS dans la console).
+
