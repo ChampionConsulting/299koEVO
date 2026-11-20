@@ -188,7 +188,8 @@ class Template
                 $trimmed = trim($strName);
                 $isTrustedContainer = in_array($trimmed, ['CONTENT', 'show.scriptTags', 'SHOW.scriptTags', 'show.linkTags', 'SHOW.linkTags', 'antispamField', 'antispam_field'], true)
                     || str_ends_with($trimmed, '_TPL')
-                    || (stripos($trimmed, 'antispam') !== false);
+                    || (stripos($trimmed, 'antispam') !== false)
+                    || (stripos($trimmed, 'callhook(') !== false);
                 $output = (string)$val;
                 if (!$isRaw && !$isTrustedContainer) {
                     $output = \Utils\Sanitizer::stripXssVectors($output);

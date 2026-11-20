@@ -164,7 +164,7 @@ class MarketPlaceRessource
             return false;
         }
 
-        if (!empty($this->lastVersion) && !empty($this->version) && version_compare($this->version, $this->lastVersion, '>')) {
+        if (!empty($this->lastVersion) && !empty($this->version) && version_compare($this->version, $this->lastVersion, '>=')) {
             return false;
         }
 
