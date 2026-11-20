@@ -60,6 +60,14 @@ class Csrf
         return $valid;
     }
 
+    /**
+     * Alias for validate(), allowing check() calls without rotating token by default.
+     */
+    public static function check(?string $providedToken, bool $rotateOnSuccess = false): bool
+    {
+        return self::validate($providedToken, $rotateOnSuccess);
+    }
+
     public static function hiddenField(): string
     {
         $token = self::token();
