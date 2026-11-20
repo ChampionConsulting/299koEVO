@@ -776,7 +776,7 @@ div.tooltip:hover > span {
 
 #header,
 #header.adm-topbar{
-    background: var(--nav-bg-color, #16202e) !important;
+    background: var(--nav-bg-color, #16202e);
     position: sticky;
     top: 0;
     width: 100%;
