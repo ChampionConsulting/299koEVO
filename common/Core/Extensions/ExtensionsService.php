@@ -251,12 +251,14 @@ class ExtensionsService
             return $content;
         });
         $core->addHook('adminHead', function () {
+            $out = '';
             foreach ($this->getAdminCssUrls() as $url) {
-                echo '<link href="' . $url . '" rel="stylesheet" type="text/css" />';
+                $out .= '<link href="' . $url . '" rel="stylesheet" type="text/css" />' . "\n";
             }
             foreach ($this->getAdminJsUrls() as $url) {
-                echo '<script type="text/javascript" src="' . $url . '"></script>';
+                $out .= '<script type="text/javascript" src="' . $url . '"></script>' . "\n";
             }
+            return $out;
         });
     }
 

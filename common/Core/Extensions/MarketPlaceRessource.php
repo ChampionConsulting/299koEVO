@@ -2,6 +2,7 @@
 
 namespace Core\Extensions;
 
+use Core\Core;
 use Core\Plugin\PluginsManager;
 use Core\Theme;
 use Utils\Util;
@@ -250,7 +251,7 @@ class MarketPlaceRessource
                 return \Utils\Util::urlBuild(THEMES . $this->slug . '/icon.png');
             }
             // 2. Sinon URL de l'API Marketplace officielle
-            $marketUrl = rtrim((string)\Core::getInstance()->getConfigVal('marketplaceUrl'), '/');
+            $marketUrl = rtrim((string)Core::getInstance()->getConfigVal('marketplaceUrl'), '/');
             if (empty($marketUrl)) {
                 $marketUrl = 'https://299ko-api.flexcb.fr';
             }
