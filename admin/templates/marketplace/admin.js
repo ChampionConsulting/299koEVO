@@ -22,6 +22,19 @@ function initMarketplaceToolbars() {
             return;
         }
 
+        // Calculate counts per category
+        const counts = { all: items.length, updates: 0, exclusive: 0 };
+        items.forEach(function (item) {
+            const cat = item.getAttribute('data-category') || 'system';
+            counts[cat] = (counts[cat] || 0) + 1;
+            if (item.classList.contains('has-update')) {
+                counts.updates++;
+            }
+            if (item.getAttribute('data-exclusive') === '1') {
+                counts.exclusive++;
+            }
+        });
+
         // Detect if this list is for themes only
         const isThemeList = Array.from(items).every(item => item.getAttribute('data-type') === 'theme');
         const categoriesBar = toolbar.querySelector('.market-categories-bar');
@@ -37,19 +50,6 @@ function initMarketplaceToolbars() {
                 categoriesBar.style.display = 'none';
             }
         }
-
-        // Calculate counts per category
-        const counts = { all: items.length, updates: 0, exclusive: 0 };
-        items.forEach(function (item) {
-            const cat = item.getAttribute('data-category') || 'system';
-            counts[cat] = (counts[cat] || 0) + 1;
-            if (item.classList.contains('has-update')) {
-                counts.updates++;
-            }
-            if (item.getAttribute('data-exclusive') === '1') {
-                counts.exclusive++;
-            }
-        });
 
         // Update pill counts
         catPills.forEach(function (pill) {
