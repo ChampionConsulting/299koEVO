@@ -27,3 +27,4 @@ Avant de soumettre votre Pull Request, merci de vérifier ces points :
 - [ ] La validation JavaScript a été effectuée (`node -c <fichier.js>`).
 - [ ] Aucun fichier de configuration temporaire ou données personnelles n'a été inclus par erreur.
 - [ ] Les formulaires modifiés intègrent la protection CSRF et l'antispam souverain si pertinent.
+

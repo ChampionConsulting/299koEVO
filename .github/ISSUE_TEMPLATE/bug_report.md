@@ -33,3 +33,4 @@ Si applicable, ajoutez des captures d'écran pour illustrer le problème.
 ```text
 Copiez ici les erreurs éventuelles figurant dans data/*.log ou la console d'erreurs PHP.
 ```
+

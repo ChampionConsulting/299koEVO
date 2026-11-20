@@ -17,3 +17,4 @@ Précisez le fichier (ex: `README.md`, `CONTRIBUTING.md`, guide d'installation, 
 
 ### ✨ Amélioration proposée / Proposed Change
 Indiquez le texte corrigé ou la précision à apporter.
+

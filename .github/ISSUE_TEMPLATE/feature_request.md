@@ -22,3 +22,4 @@ Comment imaginez-vous la mise en œuvre ? (ex: nouvel hook, option d'administrat
 
 ### 📌 Contexte additionnel / Additional Context
 Tout autre élément pertinent (liens, maquettes, exemples d'autres outils).
+
