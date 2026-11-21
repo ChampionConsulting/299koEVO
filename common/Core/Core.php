@@ -326,6 +326,11 @@ class Core
         
         // Exposer l'URI courante nettoyée dans le template globalement
         \Template\Template::addGlobal('CURRENT_URI', Router::getInstance()->getCleanURI());
+
+        // Enregistrement du déclencheur d'arrière-plan pour l'ordonnanceur de tâches (TaskScheduler)
+        if (PHP_SAPI !== 'cli') {
+            \Core\Tasks\TaskScheduler::getInstance()->registerWebTrigger();
+        }
     }
 
     /**
@@ -463,6 +468,11 @@ class Core
         }
 
         return $this->extensionsService;
+    }
+
+    public function tasks(): \Core\Tasks\TaskScheduler
+    {
+        return \Core\Tasks\TaskScheduler::getInstance();
     }
 
     /**

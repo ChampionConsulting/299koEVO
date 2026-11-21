@@ -238,6 +238,54 @@ class CliApplication
             passthru($cmd, $exitCode);
             return (int) $exitCode;
         });
+
+        $this->registerCommand('task:run', 'Exécute les tâches en attente de la file d\'ordonnancement (TaskScheduler)', function (array $flags): int {
+            $limit = isset($flags['limit']) ? (int) $flags['limit'] : 10;
+            $duration = isset($flags['duration']) ? (int) $flags['duration'] : 30;
+            $scheduler = \Core\Tasks\TaskScheduler::getInstance();
+            $result = $scheduler->runPending($limit, $duration);
+
+            if (isset($flags['json'])) {
+                echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+                return 0;
+            }
+
+            echo sprintf("=== TaskScheduler : Exécution terminée ===\n");
+            echo sprintf("  Tâches traitées : %d (Succès : %d, Échecs : %d)\n", $result['processed'], $result['success'], $result['failed']);
+            if (!empty($result['tasks'])) {
+                foreach ($result['tasks'] as $t) {
+                    $st = $t['status'] === 'completed' ? 'OK' : 'FAIL';
+                    echo sprintf("  - [%s] %s (%s) attempts: %d %s\n", $st, $t['id'], $t['handler'], $t['attempts'], $t['error'] ? 'Err: ' . $t['error'] : '');
+                }
+            }
+            return $result['failed'] > 0 ? 2 : 0;
+        });
+
+        $this->registerCommand('task:list', 'Affiche l\'état de la file d\'attente et des statistiques TaskScheduler', function (array $flags): int {
+            $scheduler = \Core\Tasks\TaskScheduler::getInstance();
+            $stats = $scheduler->getStats();
+            $tasks = $scheduler->listTasks($flags['status'] ?? null);
+
+            if (isset($flags['json'])) {
+                echo json_encode(['stats' => $stats, 'tasks' => $tasks], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+                return 0;
+            }
+
+            echo "=== TaskScheduler : État de la file d'attente ===\n";
+            echo sprintf("  En attente : %d | En cours : %d | En échec : %d | Historique : %d\n", $stats['pending'], $stats['processing'], $stats['failed'], $stats['history_count']);
+            echo sprintf("  Dernière exécution : %s\n\n", $stats['last_run'] ? date('Y-m-d H:i:s', $stats['last_run']) : 'Aucune');
+
+            if (empty($tasks)) {
+                echo "  Aucune tâche dans la file active.\n";
+            } else {
+                echo sprintf("  %-20s %-28s %-12s %-10s %s\n", 'ID', 'HANDLER', 'STATUT', 'PRIORITÉ', 'EXÉCUTION');
+                foreach ($tasks as $t) {
+                    $runDate = date('Y-m-d H:i:s', $t['run_at']);
+                    echo sprintf("  %-20s %-28s %-12s %-10d %s\n", $t['id'], substr($t['handler'], 0, 26), $t['status'], $t['priority'], $runDate);
+                }
+            }
+            return 0;
+        });
     }
 
     private function printHelp(): void
