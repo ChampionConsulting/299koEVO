@@ -926,11 +926,22 @@ class AuthService
      */
     public function getAdminNavEntries(): array
     {
+        $pendingCount = 0;
+        try {
+            $all = RegistrationRequest::all();
+            foreach ($all as $reg) {
+                if (($reg->attributes['status'] ?? '') === 'pending' && ($reg->attributes['validation_mode'] ?? '') === 'admin') {
+                    $pendingCount++;
+                }
+            }
+        } catch (\Throwable $e) {}
+
         return [
             [
-                'name' => 'users',
-                'icon' => 'fa-regular fa-user',
-                'label' => Lang::get('users.name')
+                'name'  => 'users',
+                'icon'  => 'fa-regular fa-user',
+                'label' => Lang::get('users.name'),
+                'badge' => $pendingCount > 0 ? (string)$pendingCount : null,
             ]
         ];
     }

@@ -128,10 +128,14 @@ class UsersAdminController extends AdminController {
         $user->permissions = $registration->attributes['permissions'] ?? [];
         $user->save();
         
+        // Notification par email à l'utilisateur approuvé
+        $this->sendUserApprovalMail($user);
+        $this->core->callHook('users:after-registration-approved', ['user' => $user]);
+
         // Supprimer la demande
         $registration->delete();
         
-        \Utils\Show::msg('Demande d\'inscription approuvée. L\'utilisateur a été créé.', 'success');
+        \Utils\Show::msg('Demande d\'inscription approuvée. L\'utilisateur a été créé et notifié par email.', 'success');
         $this->core->redirect($this->router->generate('users-admin-home'));
         return null;
     }
@@ -153,11 +157,57 @@ class UsersAdminController extends AdminController {
             return null;
         }
         
+        $email = $registration->attributes['email'] ?? '';
+        $username = $registration->attributes['username'] ?? '';
+        if (!empty($email)) {
+            $this->sendUserRejectionMail($email, $username);
+        }
+        $this->core->callHook('users:registration-rejected', ['email' => $email, 'username' => $username]);
+
         // Supprimer la demande
         $registration->delete();
         
-        \Utils\Show::msg('Demande d\'inscription rejetée.', 'success');
+        \Utils\Show::msg('Demande d\'inscription rejetée et notification envoyée.', 'success');
         $this->core->redirect($this->router->generate('users-admin-home'));
         return null;
+    }
+
+    protected function sendUserApprovalMail(User $user): bool
+    {
+        $siteName = $this->core->getConfigVal('siteName') ?: '299ko EVO';
+        $siteUrl = rtrim((string)($this->core->getConfigVal('siteUrl') ?: ''), '/');
+        $domain = parse_url($siteUrl, PHP_URL_HOST) ?: 'localhost';
+        $from = $siteName . ' <no-reply@' . $domain . '>';
+        $reply = $from;
+        $to = $user->email;
+        $loginUrl = \Utils\Util::urlBuild($this->router->generate('login'));
+
+        $subject = "[{$siteName}] Votre compte a été validé !";
+        $msg = "Bonjour {$user->username()},\n\n"
+             . "Bonne nouvelle ! Votre demande d'inscription sur {$siteName} a été approuvée par un administrateur.\n\n"
+             . "Votre compte est désormais pleinement actif. Vous pouvez vous connecter dès maintenant en cliquant sur le lien ci-dessous :\n"
+             . "{$loginUrl}\n\n"
+             . "Bienvenue parmi nous !\n\n"
+             . "Cordialement,\n"
+             . "L'équipe {$siteName}";
+
+        return \Utils\Util::sendEmail($from, $reply, $to, $subject, $msg);
+    }
+
+    protected function sendUserRejectionMail(string $email, string $username): bool
+    {
+        $siteName = $this->core->getConfigVal('siteName') ?: '299ko EVO';
+        $siteUrl = rtrim((string)($this->core->getConfigVal('siteUrl') ?: ''), '/');
+        $domain = parse_url($siteUrl, PHP_URL_HOST) ?: 'localhost';
+        $from = $siteName . ' <no-reply@' . $domain . '>';
+        $reply = $from;
+
+        $subject = "[{$siteName}] Information concernant votre demande d'inscription";
+        $msg = "Bonjour {$username},\n\n"
+             . "Nous vous informons que votre demande d'inscription sur le site {$siteName} n'a pas été retenue par l'équipe d'administration.\n\n"
+             . "Cordialement,\n"
+             . "L'équipe {$siteName}";
+
+        return \Utils\Util::sendEmail($from, $reply, $email, $subject, $msg);
     }
 }

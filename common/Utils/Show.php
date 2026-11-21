@@ -560,6 +560,7 @@ class Show
             $catActive = false;
             $catHasUpdate = false;
             $cmsHasUpdate = false;
+            $catBadgeTotal = 0;
             foreach ($items as $it) {
                 if ($currentPlugin === $it['slug']) {
                     $catActive = true;
@@ -570,10 +571,15 @@ class Show
                         $cmsHasUpdate = true;
                     }
                 }
+                if (!empty($it['badge']) && is_numeric($it['badge'])) {
+                    $catBadgeTotal += (int)$it['badge'];
+                }
             }
 
             $badgeHtml = '';
-            if ($catKey === 'systeme') {
+            if ($catBadgeTotal > 0) {
+                $badgeHtml = '<span class="adm-cat-badge" style="background:#ef4444; color:#fff;" title="' . $catBadgeTotal . ' élément(s) en attente">' . $catBadgeTotal . '</span>';
+            } elseif ($catKey === 'systeme') {
                 if ($pluginsUpdatesCount > 0) {
                     $badgeHtml = '<span class="adm-cat-badge" title="' . $pluginsUpdatesCount . ' plugin(s) à mettre à jour">MAJ plugins (' . $pluginsUpdatesCount . ')</span>';
                 } elseif ($cmsHasUpdate) {

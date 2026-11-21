@@ -141,13 +141,23 @@ class AdminDashboardController extends AdminController
             }
         }
 
+        $pendingRegistrationsCount = 0;
+        try {
+            foreach (\Core\Auth\RegistrationRequest::all() as $reg) {
+                if (($reg->attributes['status'] ?? '') === 'pending' && ($reg->attributes['validation_mode'] ?? '') === 'admin') {
+                    $pendingRegistrationsCount++;
+                }
+            }
+        } catch (\Throwable $e) {}
+
         return [
-            'publishedPages' => $publishedPages,
-            'draftPages'     => $draftPages,
-            'totalMenuItems' => $totalMenuItems,
-            'usersCount'     => $usersCount,
-            'activePlugins'  => $activePlugins,
-            'totalPlugins'   => $totalPlugins,
+            'publishedPages'            => $publishedPages,
+            'draftPages'                => $draftPages,
+            'totalMenuItems'            => $totalMenuItems,
+            'usersCount'                => $usersCount,
+            'pendingRegistrationsCount' => $pendingRegistrationsCount,
+            'activePlugins'             => $activePlugins,
+            'totalPlugins'              => $totalPlugins,
         ];
     }
 

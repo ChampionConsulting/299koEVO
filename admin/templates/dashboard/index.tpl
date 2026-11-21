@@ -22,6 +22,24 @@
         </div>
     </section>
 
+    <!-- Bannière Inscriptions en attente -->
+    {% if stats.pendingRegistrationsCount > 0 %}
+    <div class="adm-alert-banner adm-alert-warning" style="margin-bottom:24px; padding:16px 20px; border-radius:12px; background:rgba(239,68,68,0.08); border:1.5px solid #ef4444; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:42px; height:42px; border-radius:10px; background:#ef4444; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
+                <i class="fa-solid fa-user-clock"></i>
+            </div>
+            <div>
+                <strong style="color:var(--text-color, #1e293b); font-size:1.05rem; display:block;">{{stats.pendingRegistrationsCount}} inscription(s) en attente d'approbation</strong>
+                <span style="font-size:0.875rem; color:var(--text-muted, #64748b);">De nouveaux utilisateurs se sont inscrits et attendent votre validation pour accéder à leur compte.</span>
+            </div>
+        </div>
+        <a href="/admin/users" class="adm-btn adm-btn-sm" style="background:#ef4444; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:700; white-space:nowrap; display:inline-flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-user-check"></i> Traiter les demandes ({{stats.pendingRegistrationsCount}})
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Grille de KPIs Temps Réel -->
     <div class="adm-kpi-grid">
         <a href="/admin/page" class="adm-kpi-card">
@@ -42,12 +60,18 @@
             </div>
         </a>
 
-        <a href="/admin/users" class="adm-kpi-card">
+        <a href="/admin/users" class="adm-kpi-card{% if stats.pendingRegistrationsCount > 0 %} is-alert{% endif %}">
             <div class="kpi-icon kpi-indigo"><i class="fa-solid fa-users"></i></div>
             <div class="kpi-body">
                 <span class="kpi-label">Utilisateurs</span>
                 <strong class="kpi-val">{{stats.usersCount|default(0)}}</strong>
-                <span class="kpi-sub">Comptes enregistrés</span>
+                {% if stats.pendingRegistrationsCount > 0 %}
+                    <span class="kpi-sub text-danger font-weight-bold" style="color:#ef4444; font-weight:700;">
+                        <i class="fa-solid fa-clock"></i> {{stats.pendingRegistrationsCount}} en attente !
+                    </span>
+                {% else %}
+                    <span class="kpi-sub">Comptes enregistrés</span>
+                {% endif %}
             </div>
         </a>
 

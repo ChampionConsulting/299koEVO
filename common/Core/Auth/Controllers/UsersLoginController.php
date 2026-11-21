@@ -227,6 +227,7 @@ class UsersLoginController extends PublicController
                 }
             } else {
                 // Mode admin : en attente de validation par un administrateur
+                $this->notifyAdminsNewRegistration($registration);
                 Show::msg(Lang::get('users.registration-pending-admin'), 'success');
             }
 
@@ -967,6 +968,85 @@ class UsersLoginController extends PublicController
         $msg .= "\n\n" . "Code de validation (si demandé) : " . $token;
 
         return Util::sendEmail($from, $reply, $to, $subject, $msg);
+    }
+
+    protected function notifyAdminsNewRegistration(RegistrationRequest $request): void
+    {
+        $username = $request->attributes['username'] ?? '';
+        $email = $request->attributes['email'] ?? '';
+        $firstname = $request->attributes['firstname'] ?? '';
+        $lastname = $request->attributes['lastname'] ?? '';
+        $fullName = trim($firstname . ' ' . $lastname);
+        if ($fullName === '') {
+            $fullName = $username;
+        }
+        $created = $request->attributes['created_at'] ?? time();
+        $date = date('d/m/Y à H:i', is_numeric($created) ? (int)$created : strtotime((string)$created));
+        $token = $request->attributes['token'] ?? '';
+
+        $siteName = $this->core->getConfigVal('siteName') ?: '299ko EVO';
+        $siteUrl = rtrim((string)($this->core->getConfigVal('siteUrl') ?: ''), '/');
+        $domain = parse_url($siteUrl, PHP_URL_HOST) ?: 'localhost';
+        $from = $siteName . ' <no-reply@' . $domain . '>';
+        $reply = $from;
+
+        $adminUrl = \Utils\Util::urlBuild($this->router->generate('users-admin-home'));
+        $approveUrl = \Utils\Util::urlBuild($this->router->generate('users-registration-approve', ['token' => $token]));
+        $rejectUrl = \Utils\Util::urlBuild($this->router->generate('users-registration-reject', ['token' => $token]));
+
+        // Collecte des adresses des administrateurs
+        $adminEmails = [];
+        try {
+            $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+            foreach (User::findAll() as $u) {
+                if ($evaluator->isAdmin(new \Core\Navigation\ConditionContext($u))) {
+                    if (!empty($u->email) && filter_var($u->email, FILTER_VALIDATE_EMAIL)) {
+                        $adminEmails[] = $u->email;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        $siteEmail = $this->core->getConfigVal('email') ?: $this->core->getConfigVal('adminEmail');
+        if (!empty($siteEmail) && filter_var($siteEmail, FILTER_VALIDATE_EMAIL)) {
+            $adminEmails[] = $siteEmail;
+        }
+        $adminEmails = array_values(array_unique($adminEmails));
+
+        $subject = "[{$siteName}] Nouvelle inscription en attente de validation ({$username})";
+        $msg = "Bonjour,\n\n"
+             . "Un nouvel utilisateur vient de créer un compte sur {$siteName} et sa demande est en attente de votre approbation :\n\n"
+             . "• Identifiant : {$username}\n"
+             . "• Adresse email : {$email}\n"
+             . "• Nom complet : {$fullName}\n"
+             . "• Date de demande : {$date}\n\n"
+             . "Pour consulter et gérer les inscriptions en attente, rendez-vous dans votre espace d'administration :\n"
+             . "{$adminUrl}\n\n"
+             . "Actions directes :\n"
+             . "• Approuver immédiatement : {$approveUrl}\n"
+             . "• Rejeter : {$rejectUrl}\n\n"
+             . "Cordialement,\n"
+             . "L'équipe {$siteName}";
+
+        foreach ($adminEmails as $to) {
+            Util::sendEmail($from, $reply, $to, $subject, $msg);
+        }
+
+        // Hooks pour le bus d'événements et le centre de notifications in-app
+        $this->core->callHook('users:registration-pending', [
+            'registration' => $request,
+            'username'     => $username,
+            'email'        => $email,
+        ]);
+
+        $this->core->callHook('notifications:send', [
+            'type'        => 'registration_pending',
+            'title'       => 'Inscription en attente',
+            'message'     => "L'utilisateur '{$username}' ({$email}) est en attente d'approbation.",
+            'url'         => $adminUrl,
+            'target_role' => 'admin',
+            'icon'        => 'fa-solid fa-user-clock',
+        ]);
     }
 
     protected function ensureRegistrationEnabled(): void
