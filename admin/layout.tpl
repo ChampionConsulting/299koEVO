@@ -28,7 +28,7 @@
 						</label>
 					</div>
 
-					<input type="checkbox" id="adm_nav_toggle" class="adm-nav-toggle" aria-hidden="true" style="display:none;" />
+					<input type="checkbox" id="adm_nav_toggle" class="adm-nav-toggle" aria-hidden="true" hidden style="display:none;" />
 					<div id="admNavCollapse" class="adm-nav-collapse">
 						<ul id="navigation" class="adm-nav-list">
 							{{show.adminNavigation}}

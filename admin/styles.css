@@ -1117,7 +1117,9 @@ section > footer, .card > footer {
     font-size: 1.15rem;
 }
 
-.adm-nav-toggle {
+#adm_nav_toggle,
+.adm-nav-toggle,
+input#adm_nav_toggle[type="checkbox"] {
     display: none;
 }
 
