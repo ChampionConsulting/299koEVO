@@ -431,52 +431,16 @@
     #navigation > li {
         position: relative;
         transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                    max-width 0.26s cubic-bezier(0.16, 1, 0.3, 1),
-                    margin 0.22s ease,
-                    padding 0.22s ease;
+                    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Déploiement fluide du champ de recherche : masquage natif des autres liens de navigation (Desktop) */
+    /* Déploiement fluide du champ de recherche : estompage natif des autres liens (100% Pur CSS) */
     @media (min-width: 861px) {
-        #header.search-active #navigation,
-        #navigation.search-active,
-        #navigation:has(.search299-wrapper:hover),
-        #navigation:has(.search299-pill-form:focus-within),
-        #navigation:has(.nav-search-item:hover),
-        #navigation:has(.nav-search-item:focus-within) {
-            gap: 0;
-        }
-
-        #header.search-active #navigation > li:not(.nav-search-item),
-        #navigation.search-active > li:not(.nav-search-item),
         #navigation:has(.search299-wrapper:hover) > li:not(.nav-search-item),
-        #navigation:has(.search299-pill-form:focus-within) > li:not(.nav-search-item),
-        #navigation:has(.nav-search-item:hover) > li:not(.nav-search-item),
-        #navigation:has(.nav-search-item:focus-within) > li:not(.nav-search-item) {
+        #navigation:has(.search299-pill-form:focus-within) > li:not(.nav-search-item) {
             opacity: 0;
-            max-width: 0;
-            margin: 0;
-            padding-left: 0;
-            padding-right: 0;
-            overflow: hidden;
-            white-space: nowrap;
             pointer-events: none;
-            visibility: hidden;
-            transform: scale(0.92) translateX(-8px);
-        }
-
-        #header.search-active #navigation > li:not(.nav-search-item) > a,
-        #navigation.search-active > li:not(.nav-search-item) > a,
-        #navigation:has(.search299-wrapper:hover) > li:not(.nav-search-item) > a,
-        #navigation:has(.search299-pill-form:focus-within) > li:not(.nav-search-item) > a,
-        #navigation:has(.nav-search-item:hover) > li:not(.nav-search-item) > a,
-        #navigation:has(.nav-search-item:focus-within) > li:not(.nav-search-item) > a {
-            padding-left: 0;
-            padding-right: 0;
-            margin: 0;
-            max-width: 0;
-            overflow: hidden;
+            transform: scale(0.96) translateX(-4px);
         }
     }
 
