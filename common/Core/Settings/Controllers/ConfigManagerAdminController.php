@@ -213,6 +213,7 @@ class ConfigManagerAdminController extends AdminController {
             'maintenance_template' => trim($_POST['maintenance_template'] ?? ''),
             'enable_theme_toggle' => (isset($_POST['enable_theme_toggle'])) ? true : false,
             'marketplaceLicenseKey' => trim($_POST['marketplaceLicenseKey'] ?? ''),
+            'update_channel' => (isset($_POST['update_channel']) && $_POST['update_channel'] === 'nightly') ? 'nightly' : 'stable',
         ];
         $config['allowRegistrations'] = isset($_POST['allowRegistrations']);
         $config['antispamLogin'] = isset($_POST['antispamLogin']);
@@ -260,6 +261,8 @@ class ConfigManagerAdminController extends AdminController {
             // Purger automatiquement le cache à chaque sauvegarde de configuration
             $cacheManager = new CacheManager();
             $cacheManager->clearCache();
+            // Rafraîchir immédiatement l'état des mises à jour selon le canal configuré
+            $this->core->settings()->getNewVersion();
             Show::msg(Lang::get("core-changes-saved"), 'success');
         }
         //$this->core->saveHtaccess($_POST['htaccess']);

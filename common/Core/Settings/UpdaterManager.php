@@ -185,8 +185,18 @@ class UpdaterManager
             return (string) $this->lastVersion;
         }
         
-        // 2. Correctif de sécurité continu (version égale ou en avance, nouveau commit sur main)
-        if ($comparison <= 0 && !empty($this->latestCommit)) {
+        // Vérifier le canal de mise à jour sélectionné (stable ou nightly)
+        $channel = 'stable';
+        if (class_exists('\Core\Core')) {
+            $core = \Core\Core::getInstance();
+            $configuredChannel = $core->getConfigVal('update_channel');
+            if (is_string($configuredChannel) && $configuredChannel === 'nightly') {
+                $channel = 'nightly';
+            }
+        }
+
+        // 2. Correctif de sécurité continu (canal Nightly / au fil de l'eau uniquement)
+        if ($channel === 'nightly' && $comparison <= 0 && !empty($this->latestCommit)) {
             $localCommit = $this->getLocalCommit();
             if ($localCommit === null || strtolower(substr($localCommit, 0, 7)) !== strtolower(substr($this->latestCommit, 0, 7))) {
                 return (string) $this->latestCommit;

@@ -168,12 +168,20 @@
 						<a aria-describedby="checkUpdateDesc" class="button small" href="{{checkUpdateLink}}"><i class="fa-solid fa-rotate"></i> Vérifier les mises à jour</a>
 						{% if hasCoreUpdate %}
 							{% if isCorePatch %}
-								<a href="{{coreUpdateUrl}}" class="button alert small"><i class="fa-solid fa-shield-halved"></i> Appliquer le correctif</a>
+								<a href="{{coreUpdateUrl}}" class="button alert small"><i class="fa-solid fa-shield-halved"></i> Appliquer le correctif (patch {{nextCoreVersion|slice(0, 7)}})</a>
 							{% else %}
 								<a href="{{coreUpdateUrl}}" class="button alert small"><i class="fa-solid fa-cloud-arrow-down"></i> Mettre à jour (v{{nextCoreVersion}})</a>
 							{% endif %}
 						{% endif %}
 					</div>
+				</p>
+				<p>
+					<label for="update_channel"><strong>Canal de mises à jour :</strong></label><br>
+					<select name="update_channel" id="update_channel" style="max-width: 420px;">
+						<option value="stable" {% if CORE.getConfigVal("update_channel") != "nightly" %}selected{% endif %}>Canal Stable (Releases officielles uniquement)</option>
+						<option value="nightly" {% if CORE.getConfigVal("update_channel") == "nightly" %}selected{% endif %}>Canal Nightly (Patchs et correctifs GitHub au fil de l'eau)</option>
+					</select>
+					<br><small style="color:var(--ag-text-muted, #64748b);">Le canal <strong>Stable</strong> ne vous notifie que lors de la parution d'une release officielle (ex: v0.3.4). Le canal <strong>Nightly</strong> vous propose chaque patch de commit dès sa validation sur la branche <code>main</code> de GitHub.</small>
 				</p>
 				<p>
 					<input {% if CORE.getConfigVal("debug") %} checked {% endif %} type="checkbox" name="debug"/>
