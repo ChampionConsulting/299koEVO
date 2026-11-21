@@ -215,6 +215,8 @@ class PluginInspector
         }
 
         $report['files_stats']['size_formatted'] = $this->formatBytes($report['files_stats']['size_bytes']);
+        $report['hooks']['registered'] = array_values(array_unique($report['hooks']['registered']));
+        $report['hooks']['called'] = array_values(array_unique($report['hooks']['called']));
 
         return $report;
     }
@@ -244,16 +246,20 @@ class PluginInspector
         $report['metadata'] = $json;
 
         // Validation des champs requis
-        $requiredFields = ['name', 'version', 'author', 'description'];
+        $requiredFields = ['name', 'version', 'description'];
         foreach ($requiredFields as $field) {
             if (empty($json[$field])) {
                 $this->addIssue($report, self::SEVERITY_WARNING, "Champ obligatoire '{$field}' manquant ou vide dans infos.json.");
             }
         }
+        if (empty($json['author']) && empty($json['authorEmail']) && empty($json['authorWebsite'])) {
+            $this->addIssue($report, self::SEVERITY_WARNING, "Champ d'identification auteur ('author' ou 'authorEmail') manquant dans infos.json.");
+        }
 
-        // Vérification de la correspondance du slug
-        if (!empty($json['name']) && strtolower(trim($json['name'])) !== strtolower($slug)) {
-            $this->addIssue($report, self::SEVERITY_WARNING, "Divergence de nom : le dossier s'appelle '{$slug}' alors que infos.json déclare '{$json['name']}'.");
+        // Vérification de la correspondance du slug ou du nom
+        $declaredSlug = !empty($json['slug']) ? trim($json['slug']) : trim($json['name'] ?? '');
+        if (!empty($declaredSlug) && strtolower($declaredSlug) !== strtolower($slug)) {
+            $this->addIssue($report, self::SEVERITY_WARNING, "Divergence d'identifiant : le dossier s'appelle '{$slug}' alors que infos.json déclare '{$declaredSlug}'.");
         }
 
         // Vérification de la version (format semver)
@@ -402,8 +408,8 @@ class PluginInspector
                 $nextIndex = $this->getNextMeaningfulTokenIndex($tokens, $i);
                 $isCall = ($nextIndex !== null && $tokens[$nextIndex] === '(');
 
-                if (!$isMethodCallOrDef && $isCall) {
-                    if (isset(self::$proscribedFunctions[$funcName])) {
+                if ($isCall) {
+                    if (!$isMethodCallOrDef && isset(self::$proscribedFunctions[$funcName])) {
                         $desc = self::$proscribedFunctions[$funcName];
                         $report['security']['safe_functions'] = false;
                         $this->addIssue($report, self::SEVERITY_CRITICAL, "Fonction proscrite '{$funcName}()' détectée dans {$relativePath} à la ligne {$line} ({$desc}).");
