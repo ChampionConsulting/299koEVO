@@ -301,6 +301,13 @@ class PluginInspector
                     $this->addIssue($report, self::SEVERITY_CRITICAL, "Fichier PHP principal du plugin '{$slug}.php' introuvable.");
                 }
             }
+        } elseif ($type === 'theme') {
+            if (!file_exists($dir . DIRECTORY_SEPARATOR . 'layout.tpl')) {
+                $this->addIssue($report, self::SEVERITY_CRITICAL, "Fichier de gabarit principal 'layout.tpl' introuvable pour ce thème.");
+            }
+            if (!file_exists($dir . DIRECTORY_SEPARATOR . 'styles.css')) {
+                $this->addIssue($report, self::SEVERITY_WARNING, "Feuille de styles principale 'styles.css' introuvable pour ce thème.");
+            }
         }
     }
 
