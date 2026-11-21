@@ -24,6 +24,7 @@ release.sh
 
 # Rapports et notes locales
 RAPPORT_*.md
+INVENTAIRE_*.md
 *.local.md
 *.tmp
 
