@@ -286,6 +286,65 @@ class CliApplication
             }
             return 0;
         });
+
+        $this->registerCommand('data:inspect', 'Contrôle l\'intégrité des données JSON et des références croisées', function (array $flags): int {
+            $inspector = \Core\Data\DataInspector::getInstance();
+            $report = $inspector->audit();
+
+            if (isset($flags['json'])) {
+                echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+                return $report['score'] < 70 ? 1 : 0;
+            }
+
+            echo sprintf("=== DataInspector : Rapport d'intégrité (Score : %d/100) ===\n", $report['score']);
+            echo sprintf("  Statut général : %s\n", strtoupper($report['status']));
+            echo sprintf("  Fichiers JSON vérifiés : %d (Valides : %d)\n", $report['stats']['json_files_checked'], $report['stats']['json_files_valid']);
+            echo sprintf("  Liens de menu orphelins : %d\n", $report['stats']['orphan_menu_items']);
+            echo sprintf("  Références catégories orphelines : %d\n", $report['stats']['orphan_category_refs']);
+            echo sprintf("  Commentaires orphelins : %d\n", $report['stats']['orphan_comments']);
+            echo sprintf("  Cohérence SQL : %s\n\n", $report['stats']['sql_integrity']);
+
+            if (!empty($report['issues']['critical'])) {
+                echo "  [CRITIQUE]\n";
+                foreach ($report['issues']['critical'] as $iss) {
+                    echo "   - {$iss}\n";
+                }
+            }
+            if (!empty($report['issues']['warning'])) {
+                echo "  [AVERTISSEMENT]\n";
+                foreach ($report['issues']['warning'] as $iss) {
+                    echo "   - {$iss}\n";
+                }
+            }
+            if (!empty($report['issues']['info'])) {
+                echo "  [INFO]\n";
+                foreach ($report['issues']['info'] as $iss) {
+                    echo "   - {$iss}\n";
+                }
+            }
+            if (empty($report['issues']['critical']) && empty($report['issues']['warning'])) {
+                echo "  ✓ Aucune anomalie critique détectée. Système sain.\n";
+            }
+            return 0;
+        });
+
+        $this->registerCommand('data:repair', 'Répare automatiquement les données orphelines et liens rompus', function (array $flags): int {
+            $inspector = \Core\Data\DataInspector::getInstance();
+            $result = $inspector->repair();
+
+            if (isset($flags['json'])) {
+                echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+                return 0;
+            }
+
+            echo "=== DataInspector : Opération de réparation ===\n";
+            echo sprintf("  Actions effectuées : %d\n", $result['repaired_count']);
+            foreach ($result['actions'] as $act) {
+                echo "   ✓ {$act}\n";
+            }
+            echo sprintf("  Nouveau score d'intégrité : %d/100 (Statut : %s)\n", $result['new_audit']['score'], $result['new_audit']['status']);
+            return 0;
+        });
     }
 
     private function printHelp(): void

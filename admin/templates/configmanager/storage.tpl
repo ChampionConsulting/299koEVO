@@ -18,6 +18,14 @@
             <li data-tab="info">
                 <i class="fa-solid fa-circle-info"></i> Informations
             </li>
+            <li data-tab="audit">
+                <i class="fa-solid fa-stethoscope"></i> Intégrité & Audit
+                {% if auditData.score < 90 %}
+                    <span class="badge badge-warning" style="margin-left: 6px; font-size: 0.75rem;">{{ auditData.score }}/100</span>
+                {% else %}
+                    <span class="badge badge-success" style="margin-left: 6px; font-size: 0.75rem;">100/100</span>
+                {% endif %}
+            </li>
         </ul>
 
         <ul class="tabs">
@@ -335,6 +343,98 @@
                     </div>
                 </div>
             </li>
+
+            <!-- TAB 4 : Intégrité & Audit (DataInspector) -->
+            <li class="tab">
+                <div class="storage-section">
+                    <h3><i class="fa-solid fa-stethoscope"></i> DataInspector : Audit d'intégrité & Réparation</h3>
+                    <p class="section-desc">Vérification de la santé des fichiers de données, des références croisées et détection des données orphelines.</p>
+
+                    <!-- Score Card -->
+                    <div class="db-config-grid" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div class="audit-score-circle {% if auditData.score >= 90 %}score-healthy{% elseif auditData.score >= 60 %}score-warning{% else %}score-critical{% endif %}">
+                                <span class="score-num">{{ auditData.score }}</span>
+                                <span class="score-unit">/100</span>
+                            </div>
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; font-size: 1.1rem;">
+                                    {% if auditData.status == 'healthy' %}
+                                        <i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Données saines et intègres
+                                    {% elseif auditData.status == 'warning' %}
+                                        <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i> Anomalies mineures détectées
+                                    {% else %}
+                                        <i class="fa-solid fa-circle-xmark" style="color: #ef4444;"></i> Anomalies critiques requérant réparation
+                                    {% endif %}
+                                </h4>
+                                <p style="margin: 0; font-size: 0.88rem; color: #64748b;">
+                                    Dernière analyse : {{ auditData.stats.scanned_at|default('À l\'instant') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <form method="post" action="{{ repairUrl }}" style="margin: 0;">
+                            {{ SHOW.tokenField }}
+                            <button type="submit" class="button {% if auditData.score < 100 %}primary{% else %}secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-wrench"></i> Exécuter la réparation automatique
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Métriques détaillées -->
+                    <div class="help-grid" style="margin-bottom: 1.5rem;">
+                        <div class="storage-help">
+                            <h4><i class="fa-solid fa-file-code"></i> Fichiers JSON</h4>
+                            <p><strong>{{ auditData.stats.json_files_valid }} / {{ auditData.stats.json_files_checked }}</strong> fichiers valides et lisibles.</p>
+                        </div>
+                        <div class="storage-help">
+                            <h4><i class="fa-solid fa-link"></i> Navigation & Menus</h4>
+                            <p><strong>{{ auditData.stats.orphan_menu_items }}</strong> lien(s) rompu(s) détecté(s).</p>
+                        </div>
+                        <div class="storage-help">
+                            <h4><i class="fa-solid fa-folder-tree"></i> Catégories du Blog</h4>
+                            <p><strong>{{ auditData.stats.orphan_category_refs }}</strong> référence(s) orpheline(s).</p>
+                        </div>
+                        <div class="storage-help">
+                            <h4><i class="fa-solid fa-comments"></i> Commentaires</h4>
+                            <p><strong>{{ auditData.stats.orphan_comments }}</strong> commentaire(s) orphelin(s).</p>
+                        </div>
+                    </div>
+
+                    <!-- Liste des anomalies -->
+                    {% if auditData.issues.critical|length > 0 or auditData.issues.warning|length > 0 %}
+                        <div class="issues-container" style="margin-top: 1.5rem;">
+                            <h4 style="margin-bottom: 0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Détail des anomalies</h4>
+                            
+                            {% if auditData.issues.critical|length > 0 %}
+                                <div class="msg error" style="margin-bottom: 1rem;">
+                                    <strong>Anomalies critiques :</strong>
+                                    <ul style="margin: 0.5rem 0 0 1.25rem;">
+                                        {% for item in auditData.issues.critical %}
+                                            <li>{{ item.message|default(item) }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            {% if auditData.issues.warning|length > 0 %}
+                                <div class="msg warning" style="margin-bottom: 1rem;">
+                                    <strong>Avertissements :</strong>
+                                    <ul style="margin: 0.5rem 0 0 1.25rem;">
+                                        {% for item in auditData.issues.warning %}
+                                            <li>{{ item.message|default(item) }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="msg success">
+                            <i class="fa-solid fa-shield-check"></i> <strong>Parfait !</strong> Aucun fichier corrompu ni référence orpheline. L'intégrité globale de votre base et de vos fichiers plats est optimale.
+                        </div>
+                    {% endif %}
+                </div>
+            </li>
         </ul>
     </div>
 </section>
@@ -379,6 +479,34 @@
 .migration-status { font-size: 0.8em; margin-top: 5px; font-weight: 500; }
 .migration-status.success { color: #16a34a; }
 .migration-status.error { color: #dc2626; }
+
+/* Audit DataInspector */
+.audit-score-circle { width: 68px; height: 68px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+.score-healthy { background: #dcfce7; color: #15803d; border: 2px solid #86efac; }
+.score-warning { background: #fef3c7; color: #b45309; border: 2px solid #fcd34d; }
+.score-critical { background: #fee2e2; color: #b91c1c; border: 2px solid #fca5a5; }
+.score-num { font-size: 1.4rem; line-height: 1; }
+.score-unit { font-size: 0.65rem; opacity: 0.8; }
+.badge-warning { background: #f59e0b; color: #ffffff; }
+.badge-success { background: #10b981; color: #ffffff; }
+
+/* Dark Mode */
+:root[data-theme="dark"] .db-config-grid,
+html[data-theme="dark"] .db-config-grid { background: #1e293b; border-color: #334155; }
+:root[data-theme="dark"] .tab-btn,
+html[data-theme="dark"] .tab-btn { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+:root[data-theme="dark"] .tab-btn:hover:not(.active),
+html[data-theme="dark"] .tab-btn:hover:not(.active) { background: #334155; color: #ffffff; }
+:root[data-theme="dark"] .storage-table th,
+html[data-theme="dark"] .storage-table th { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .storage-table td,
+html[data-theme="dark"] .storage-table td { border-color: #334155; }
+:root[data-theme="dark"] .score-healthy,
+html[data-theme="dark"] .score-healthy { background: #064e3b; color: #6ee7b7; border-color: #059669; }
+:root[data-theme="dark"] .score-warning,
+html[data-theme="dark"] .score-warning { background: #78350f; color: #fde68a; border-color: #d97706; }
+:root[data-theme="dark"] .score-critical,
+html[data-theme="dark"] .score-critical { background: #7f1d1d; color: #fca5a5; border-color: #dc2626; }
 
 .storage-help { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid var(--success-color, #16a34a); border-radius: 12px; padding: 1.5rem; }
 .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; }

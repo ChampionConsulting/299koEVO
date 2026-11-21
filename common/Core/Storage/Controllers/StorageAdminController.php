@@ -87,6 +87,8 @@ class StorageAdminController extends AdminController
         $tpl->set('saveUrl', $this->router->generate('storage-admin-save'));
         $tpl->set('saveDatabaseUrl', $this->router->generate('storage-admin-save-db'));
         $tpl->set('migrateUrl', $this->router->generate('storage-admin-migrate'));
+        $tpl->set('repairUrl', $this->router->generate('storage-admin-repair'));
+        $tpl->set('auditData', \Core\Data\DataInspector::getInstance()->audit());
         $tpl->set('token', $this->user->token);
 
         $response->addTemplate($tpl);
@@ -212,5 +214,19 @@ class StorageAdminController extends AdminController
         header('Content-Type: application/json');
         echo json_encode($result);
         exit;
+    }
+
+    public function repairData()
+    {
+        $dataInspector = \Core\Data\DataInspector::getInstance();
+        $result = $dataInspector->repair();
+        
+        if (!empty($result['actions'])) {
+            Show::msg('Réparations effectuées : ' . implode(' ', $result['actions']), 'success');
+        } else {
+            Show::msg('Audit exécuté : Données saines, aucune anomalie à réparer.', 'info');
+        }
+
+        $this->core->redirect($this->router->generate('storage-admin'));
     }
 }

@@ -475,6 +475,11 @@ class Core
         return \Core\Tasks\TaskScheduler::getInstance();
     }
 
+    public function dataInspector(): \Core\Data\DataInspector
+    {
+        return \Core\Data\DataInspector::getInstance();
+    }
+
     /**
      * Check if a module name is a core module (page, users, etc.)
      * @param string $moduleName

@@ -361,6 +361,7 @@ class SettingsService
         $router->map('POST', '/admin/storage/save', 'Core\Storage\Controllers\StorageAdminController#save', 'storage-admin-save');
         $router->map('POST', '/admin/storage/save-db', 'Core\Storage\Controllers\StorageAdminController#saveDatabase', 'storage-admin-save-db');
         $router->map('POST', '/admin/storage/migrate', 'Core\Storage\Controllers\StorageAdminController#migrate', 'storage-admin-migrate');
+        $router->map('POST', '/admin/storage/repair-data', 'Core\Storage\Controllers\StorageAdminController#repairData', 'storage-admin-repair');
     }
 
     public function registerHooks(): void
