@@ -38,6 +38,7 @@ class ExtensionsService
     ];
 
     private ?MarketPlaceManager $marketplaceManager = null;
+    private ?PluginInspector $inspector = null;
 
     public function __construct()
     {
@@ -56,6 +57,15 @@ class ExtensionsService
         }
 
         return $this->marketplaceManager;
+    }
+
+    public function inspector(): PluginInspector
+    {
+        if ($this->inspector === null) {
+            $this->inspector = new PluginInspector();
+        }
+
+        return $this->inspector;
     }
 
     public function getMarketplaceConfig(): array
@@ -230,6 +240,9 @@ class ExtensionsService
 
         $router->map('GET', '/admin/pluginsmanager[/?]', 'Core\Extensions\Controllers\PluginsManagerController#list', 'pluginsmanager-list');
         $router->map('POST', '/admin/pluginsmanager/save', 'Core\Extensions\Controllers\PluginsManagerController#save', 'pluginsmanager-save');
+        $router->map('GET', '/admin/pluginsmanager/inspect-all[/?]', 'Core\Extensions\Controllers\PluginsManagerController#inspectAll', 'pluginsmanager-inspect-all');
+        $router->map('GET', '/admin/pluginsmanager/inspect/[*:plugin][/?]', 'Core\Extensions\Controllers\PluginsManagerController#inspect', 'pluginsmanager-inspect');
+        $router->map('GET', '/admin/api/plugins/inspect/[*:plugin][/?]', 'Core\Extensions\Controllers\PluginsManagerController#apiInspect', 'api-plugins-inspect');
         $router->map('GET', '/admin/pluginsmanager/[*:plugin]/[*:token]', 'Core\Extensions\Controllers\PluginsManagerController#maintenance', 'pluginsmanager-maintenance');
 
         $router->map('GET', '/admin/marketplace[/?]', 'Core\Extensions\Controllers\AdminMarketplaceController#index', 'admin-marketplace');

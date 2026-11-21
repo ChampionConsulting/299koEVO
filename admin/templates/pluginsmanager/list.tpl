@@ -7,9 +7,12 @@
         </ul>
         <ul class="tabs">
             <li class="tab">
-        <div class="module-actions">
+        <div class="module-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
             <a class="button success" href="{ ROUTER.generate("marketplace-plugins") }">
                 <i class="fa-solid fa-store"></i> {{Lang.pluginsmanager.open-marketplace}}
+            </a>
+            <a class="button" href="{ ROUTER.generate("pluginsmanager-inspect-all") }">
+                <i class="fa-solid fa-shield-halved"></i> Audit de sécurité (PluginInspector)
             </a>
         </div>
         <div class="module-grid">
@@ -49,6 +52,7 @@
                         <tr>
                             <th>{{Lang.pluginsmanager.plugin-name}}</th>
                             <th>{{Lang.pluginsmanager.plugin-version}}</th>
+                            <th>Sécurité & Santé</th>
                             <th>{{Lang.pluginsmanager.priority}}</th>
                             <th>{{Lang.pluginsmanager.activate}}</th>
                         </tr>
@@ -66,6 +70,11 @@
                                     {% ENDIF %}
                                 </td>
                                 <td>{{ plugin.getInfoVal("version") }}</td>
+                                <td>
+                                    <a class="button small" href="/admin/pluginsmanager/inspect/{{plugin.getName()}}" title="Inspecter le code et la sécurité de cette extension" style="padding:4px 8px;font-size:0.8rem;white-space:nowrap;">
+                                        <i class="fa-solid fa-shield-halved"></i> Inspecter
+                                    </a>
+                                </td>
                                 <td>
                                     <select name="priority[{{plugin.getName()}}]" onchange="document.getElementById('pluginsmanagerForm').submit();">
                                         {% FOR k, v IN priority %}

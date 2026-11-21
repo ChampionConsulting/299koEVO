@@ -137,4 +137,79 @@ class PluginsManagerController extends AdminController
         
         $this->core->redirect($this->router->generate('pluginsmanager-list'));
     }
+
+    /**
+     * Rapport d'audit de sécurité et de conformité pour une extension donnée
+     */
+    public function inspect(string $plugin)
+    {
+        $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+        $ctx = new \Core\Navigation\ConditionContext($this->user);
+        if (!$evaluator->isAdmin($ctx)) {
+            Show::msg(Lang::get('core-not-authorized'), 'error');
+            return $this->list();
+        }
+
+        $inspector = $this->core->extensions()->inspector();
+        $report = $inspector->inspectInstalled($plugin);
+
+        $response = new AdminResponse();
+        $tpl = $response->createPluginTemplate('pluginsmanager', 'inspect');
+        $response->setTitle("Inspection : {$plugin}");
+
+        $tpl->set('report', $report);
+        $tpl->set('backUrl', $this->router->generate('pluginsmanager-list'));
+        $tpl->set('inspectAllUrl', $this->router->generate('pluginsmanager-inspect-all'));
+
+        $response->addTemplate($tpl);
+        return $response;
+    }
+
+    /**
+     * Tableau de bord global d'audit de l'ensemble des extensions
+     */
+    public function inspectAll()
+    {
+        $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+        $ctx = new \Core\Navigation\ConditionContext($this->user);
+        if (!$evaluator->isAdmin($ctx)) {
+            Show::msg(Lang::get('core-not-authorized'), 'error');
+            return $this->list();
+        }
+
+        $inspector = $this->core->extensions()->inspector();
+        $audit = $inspector->inspectAllInstalled();
+
+        $response = new AdminResponse();
+        $tpl = $response->createPluginTemplate('pluginsmanager', 'inspect_all');
+        $response->setTitle("Audit de sécurité des extensions");
+
+        $tpl->set('summary', $audit['summary']);
+        $tpl->set('reports', $audit['reports']);
+        $tpl->set('backUrl', $this->router->generate('pluginsmanager-list'));
+
+        $response->addTemplate($tpl);
+        return $response;
+    }
+
+    /**
+     * Point de terminaison API JSON pour les modales d'audit asynchrones
+     */
+    public function apiInspect(string $plugin): void
+    {
+        $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+        $ctx = new \Core\Navigation\ConditionContext($this->user);
+        if (!$evaluator->isAdmin($ctx)) {
+            header('Content-Type: application/json', true, 403);
+            echo json_encode(['error' => 'Non autorisé']);
+            exit;
+        }
+
+        $inspector = $this->core->extensions()->inspector();
+        $report = $inspector->inspectInstalled($plugin);
+
+        header('Content-Type: application/json');
+        echo json_encode($report);
+        exit;
+    }
 }
