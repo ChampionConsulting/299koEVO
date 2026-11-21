@@ -44,13 +44,16 @@ flowchart TD
 
 ### 🚀 3. Les Trois Chantiers Prioritaires
 
-#### 1. `PluginInspector` (Priorité Haute) — Rendre l'écosystème intelligible
-- [ ] Graphe des dépendances entre extensions.
-- [ ] Détection des dépendances fantômes ou cassées.
-- [ ] Vérification de la compatibilité des versions du Core requises.
-- [ ] Détection des hooks non enregistrés et contrats non respectés.
-- [ ] Analyse des routes, formulaires et conformité des permissions.
-- [ ] Rapport de santé global avant toute installation ou mise à jour.
+#### 1. `PluginInspector & Pipeline Communautaire` (Priorité Haute) — Sécurité, Audit & Soumission d'Extensions
+- [ ] **Moteur d'audit statique automatique** : Analyse des ZIP soumis (détection AST de fonctions proscrites `eval`, `exec`, `shell_exec`, fuites de chemins `../..`, vérification CSRF et validation syntaxique `php -l`).
+- [ ] **Portail Web de Soumission Développeurs** : Formulaire public pour soumettre un plugin ou un thème avec validation d'intégrité en temps réel.
+- [ ] **Gestion des Mises à Jour & Jeton Auteur** : Authentification par *Developer Secret Key* garantissant que seul l'auteur d'origine peut pousser une version supérieure.
+- [ ] **Automatisation GitHub & Arbitrage NemStudio18** : Création automatique d'une Pull Request isolée sur le dépôt dédié `NemStudio18/Community_Plugins_299koEVO` avec rapport d'audit, laissant le contrôle final du merge au mainteneur unique.
+- [ ] **Distinction Claire dans la Marketplace** :
+  - Métadonnées API avec canaux distincts (`official` vs `community` vs `exclusive`).
+  - Badges visuels explicites dans l'administration (`🛡️ Officiel 299ko` vs `👥 Communauté`).
+  - Modale de confirmation transparente informant l'utilisateur à l'installation d'un module tiers.
+- [ ] Graphe des dépendances, détection des hooks manquants et rapport de santé pré-installation.
 
 #### 2. `TaskScheduler` (Priorité Haute) — Autonomie d'exécution en arrière-plan
 - [ ] Ordonnanceur natif pour tâches périodiques et exécutions différées.
@@ -100,7 +103,7 @@ flowchart TD
 
 ### 🚀 2. Top Three Priority Pillars
 
-1. **`PluginInspector` (High Priority)**: Extension static analysis, dependency graphs, orphan detection, and route/hook validation.
+1. **`PluginInspector & Community Pipeline` (High Priority)**: Automated static security screening for extension ZIPs, developer submission portal, author update tokens, automated GitHub PR workflow on `Community_Plugins_299koEVO` for lead maintainer review, and marketplace badge distinctions (`Official` vs `Community`).
 2. **`TaskScheduler` (High Priority)**: Background job queue, recurring tasks, concurrency locks, and retry mechanism.
 3. **`DataInspector` (High Priority)**: Cross-storage consistency checks, broken reference detection, and data health verification.
 
