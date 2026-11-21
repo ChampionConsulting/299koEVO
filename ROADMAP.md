@@ -78,6 +78,13 @@ flowchart TD
 - [ ] **`TranslationManager`** : Interface visuelle de comparaison multilingue avec détection des chaînes manquantes.
 - [ ] **`PluginSandbox`** : Environnement de test éphémère pour exécuter un plugin sans impacter le site réel.
 
+#### Évolutions des Extensions & Plugins
+- [ ] **`Blog` (Gestion temporelle et éditoriale fine)** :
+  - **Séparation des dates** : distinction claire entre date de création (`created_at`), date de parution/publication effective (`published_at`) et date de dernière modification (`updated_at`).
+  - **Précision horaire** : passage du format jour simple (`Y-m-d`) à l'horodatage complet (`Y-m-d H:i:s`) avec heure et minute.
+  - **Publication programmée / différée** : l'article reste masqué aux visiteurs jusqu'à ce que `published_at <= NOW()`.
+  - **Affichage éditorial conditionnel** : mention publique *« Publié le [date] à [heure] »* et, en cas de révision ultérieure, *« Mis à jour le [date] à [heure] »*.
+
 ---
 
 ## 🇬🇧 Roadmap (2026 - 2027)
@@ -104,3 +111,4 @@ flowchart TD
 - **`MediaManager`**: Centralized asset library with orphan detection and WebP processing.
 - **`Workflow`**: Inter-plugin event orchestrator.
 - **`TranslationManager`**: Graphical dictionary diff and missing keys detector.
+- **`Blog` (Advanced Editorial Scheduling & Timestamps)**: Distinct creation date (`created_at`), scheduled publication date (`published_at`), and revision date (`updated_at`) with full hour/minute precision (`Y-m-d H:i:s`), plus conditional "Updated on..." display.
