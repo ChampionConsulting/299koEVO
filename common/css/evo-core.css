@@ -489,7 +489,7 @@
 
     /* Sous-menus déroulants (Desktop) */
     #navigation > li > ul {
-        display: none;
+        display: block;
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
@@ -502,11 +502,34 @@
         padding: 6px;
         margin: 0;
         z-index: 200;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(6px);
+        transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+        transition-delay: 0.25s;
+        pointer-events: none;
+    }
+
+    /* Passerelle invisible pour transition continue du curseur sans perte de survol */
+    #navigation > li > ul::before {
+        content: '';
+        position: absolute;
+        top: -12px;
+        left: 0;
+        right: 0;
+        height: 12px;
+        background: transparent;
     }
 
     #navigation > li:hover > ul,
-    #navigation > li:focus-within > ul {
-        display: block;
+    #navigation > li:focus-within > ul,
+    #navigation > li.is-open > ul,
+    #navigation > li.vg-open > ul {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        transition-delay: 0s;
+        pointer-events: auto;
     }
 
     #navigation > li > ul > li {
@@ -715,10 +738,37 @@
 
     /* Menu déroulant de l'avatar (Desktop) */
     .nav-user-avatar-menu > ul {
+        display: block;
         right: 0;
         left: auto;
         min-width: 240px;
         padding: 8px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(6px);
+        transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+        transition-delay: 0.25s;
+        pointer-events: none;
+    }
+
+    /* Passerelle invisible pour transition continue du curseur sans perte de survol */
+    .nav-user-avatar-menu > ul::before {
+        content: '';
+        position: absolute;
+        top: -14px;
+        left: 0;
+        right: 0;
+        height: 14px;
+        background: transparent;
+    }
+
+    .nav-user-avatar-menu:hover > ul,
+    .nav-user-avatar-menu:focus-within > ul {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        transition-delay: 0s;
+        pointer-events: auto;
     }
 
     .nav-user-avatar-menu > ul > li > a {
