@@ -1,4 +1,4 @@
-﻿<section class="module-card">
+<section class="module-card">
     <header>{{Lang.pluginsmanager.plugins-list}}</header>
     <div class="tabs-container">
         <ul class="tabs-header">
