@@ -23,11 +23,12 @@
 							<i class="fa-solid fa-layer-group" aria-hidden="true"></i>
 							<span>Administration</span>
 						</a>
-						<button type="button" id="admBurgerBtn" class="adm-burger-btn" aria-expanded="false" aria-controls="admNavCollapse" aria-label="Menu">
+						<label for="adm_nav_toggle" id="admBurgerBtn" class="adm-burger-btn" aria-label="Menu d'administration">
 							<i class="fa-solid fa-bars" aria-hidden="true"></i>
-						</button>
+						</label>
 					</div>
 
+					<input type="checkbox" id="adm_nav_toggle" class="adm-nav-toggle" aria-hidden="true" />
 					<div id="admNavCollapse" class="adm-nav-collapse">
 						<ul id="navigation" class="adm-nav-list">
 							{{show.adminNavigation}}

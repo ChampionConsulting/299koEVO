@@ -113,27 +113,7 @@ function initAdminTopNav() {
         });
     });
 
-    // Tolérance au survol pour éviter la fermeture abrupte des sous-menus
-    document.querySelectorAll('.adm-has-drop').forEach(function (drop) {
-        let hoverTimer = null;
-        drop.addEventListener('mouseenter', function () {
-            if (hoverTimer) {
-                clearTimeout(hoverTimer);
-                hoverTimer = null;
-            }
-            drop.classList.add('is-open');
-            const b = drop.querySelector('button[aria-expanded]');
-            if (b) b.setAttribute('aria-expanded', 'true');
-        });
-        drop.addEventListener('mouseleave', function () {
-            hoverTimer = setTimeout(function () {
-                drop.classList.remove('is-open');
-                const b = drop.querySelector('button[aria-expanded]');
-                if (b) b.setAttribute('aria-expanded', 'false');
-            }, 350);
-        });
-    });
-
+    // Fermer les dropdowns ouverts au clic à l'extérieur
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.adm-has-drop')) {
             document.querySelectorAll('.adm-has-drop.is-open').forEach(function (el) {

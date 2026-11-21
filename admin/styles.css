@@ -1117,6 +1117,10 @@ section > footer, .card > footer {
     font-size: 1.15rem;
 }
 
+.adm-nav-toggle {
+    display: none;
+}
+
 .adm-burger-btn {
     display: none;
     background: rgba(255, 255, 255, 0.08);
@@ -1971,7 +1975,8 @@ tr td input.small {
         gap: 10px;
     }
 
-    .adm-nav-collapse.is-mobile-open {
+    .adm-nav-collapse.is-mobile-open,
+    .adm-nav-toggle:checked ~ .adm-nav-collapse {
         display: flex;
     }
 
@@ -2034,6 +2039,7 @@ tr td input.small {
         box-shadow: none;
     }
 
+    .adm-has-drop:focus-within > .adm-drop-menu,
     .adm-has-drop.is-open > .adm-drop-menu {
         display: block;
     }
