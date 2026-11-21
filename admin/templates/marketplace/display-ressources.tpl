@@ -19,6 +19,8 @@
         <button type="button" class="market-cat-pill" data-cat="social"><i class="fa-solid fa-comments"></i> <span>Social & Contact</span> <span class="pill-count"></span></button>
         <button type="button" class="market-cat-pill" data-cat="media"><i class="fa-solid fa-photo-film"></i> <span>Médias & Outils</span> <span class="pill-count"></span></button>
         <button type="button" class="market-cat-pill" data-cat="system"><i class="fa-solid fa-shield-halved"></i> <span>Système</span> <span class="pill-count"></span></button>
+        <button type="button" class="market-cat-pill market-cat-official" data-cat="official"><i class="fa-solid fa-shield-halved"></i> <span>Officiels</span> <span class="pill-count"></span></button>
+        <button type="button" class="market-cat-pill market-cat-community" data-cat="community"><i class="fa-solid fa-users"></i> <span>Communauté</span> <span class="pill-count"></span></button>
         <button type="button" class="market-cat-pill market-cat-updates" data-cat="updates"><i class="fa-solid fa-rotate"></i> <span>Mises à jour</span> <span class="pill-count"></span></button>
         <button type="button" class="market-cat-pill market-cat-exclusive" data-cat="exclusive" style="display:none;"><i class="fa-solid fa-crown"></i> <span>Mes exclusivités</span> <span class="pill-count"></span></button>
     </div>
@@ -28,12 +30,13 @@
 <div class="market-list">
     {% if ressources %}
         {% for ressource in ressources %}
-            <div class="market-card market-item {% if ressource.updateNeeded() %}has-update{% endif %} {% if ressource.isExclusive %}is-exclusive{% endif %}"
+            <div class="market-card market-item {% if ressource.updateNeeded() %}has-update{% endif %} {% if ressource.isExclusive %}is-exclusive{% endif %} {% if ressource.isCommunity() %}is-community{% else %}is-official{% endif %}"
                  data-slug="{{ressource.slug}}"
                  data-type="{{ressource.type}}"
                  data-category="{{ressource.getCategory()}}"
                  data-name="{{ressource.name}}"
                  data-desc="{{ressource.description}}"
+                 data-channel="{% if ressource.isExclusive %}exclusive{% elseif ressource.isCommunity() %}community{% else %}official{% endif %}"
                  data-exclusive="{% if ressource.isExclusive %}1{% else %}0{% endif %}">
                 
                 <!-- En-tête de carte : Catégorie + Statut d'installation -->
@@ -45,6 +48,14 @@
                         {% if ressource.isExclusive %}
                             <span class="market-badge-exclusive" title="{{ressource.exclusiveLabel|default('Exclusivité privée associée à votre jeton')}}">
                                 <i class="fa-solid fa-crown"></i> Exclusif
+                            </span>
+                        {% elseif ressource.isCommunity() %}
+                            <span class="market-badge-community" title="Extension issue de la communauté 299ko - Revue par PluginInspector">
+                                <i class="fa-solid fa-users"></i> Communauté
+                            </span>
+                        {% else %}
+                            <span class="market-badge-official" title="Extension officielle certifiée 299ko">
+                                <i class="fa-solid fa-shield-halved"></i> Officiel
                             </span>
                         {% endif %}
                         {% if ressource.updateNeeded() %}
@@ -153,9 +164,20 @@
                                     <i class="fa-solid fa-lock"></i> Requis : {{ressource.getMissingRequiredPlugins()|join(', ')}}
                                 </button>
                             {% else %}
-                                <a href='{ ROUTER.generate("marketplace-install-release", ["type" => ressource.type, "slug" => ressource.slug, "token" => token]) }' class="button market-btn-install market-btn-block">
-                                    <i class="fa-solid fa-download"></i> {{Lang.marketplace.install}}
-                                </a>
+                                {% if ressource.isCommunity() %}
+                                    <a href='{ ROUTER.generate("marketplace-install-release", ["type" => ressource.type, "slug" => ressource.slug, "token" => token]) }' 
+                                       class="button market-btn-install market-btn-block market-btn-community-install"
+                                       data-community="1"
+                                       data-name="{{ressource.name}}"
+                                       data-type="{{ressource.type}}"
+                                       data-author="{{ressource.authorEmail|default('Contributeur communautaire')}}">
+                                        <i class="fa-solid fa-download"></i> {{Lang.marketplace.install}}
+                                    </a>
+                                {% else %}
+                                    <a href='{ ROUTER.generate("marketplace-install-release", ["type" => ressource.type, "slug" => ressource.slug, "token" => token]) }' class="button market-btn-install market-btn-block">
+                                        <i class="fa-solid fa-download"></i> {{Lang.marketplace.install}}
+                                    </a>
+                                {% endif %}
                             {% endif %}
                         {% else %}
                             <button disabled class="button market-btn-disabled market-btn-block">{{Lang.marketplace.not-installable}}</button>
@@ -192,3 +214,26 @@
     <button type="button" class="button small market-reset-btn"><i class="fa-solid fa-rotate-left"></i> Réinitialiser les filtres</button>
 </div>
 {% endif %}
+
+<!-- Modale d'avertissement transparent d'extension communautaire -->
+<div id="marketCommunityModal" class="market-modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="commModalTitle">
+    <div class="market-modal-box">
+        <div class="market-modal-icon">
+            <i class="fa-solid fa-users"></i>
+        </div>
+        <h3 id="commModalTitle" class="market-modal-title">Extension de la Communauté</h3>
+        <p class="market-modal-desc">
+            Vous vous apprêtez à installer <strong id="commModalName">l'extension</strong> (<span id="commModalType">module</span>), développée par <strong id="commModalAuthor">un tiers</strong>.
+        </p>
+        <div class="market-modal-notice">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Cette extension a été analysée avec succès par <strong>PluginInspector</strong> et respecte les normes d'intégrité de 299ko EVO.</span>
+        </div>
+        <div class="market-modal-actions">
+            <button type="button" id="commModalCancel" class="button">Annuler</button>
+            <a href="#" id="commModalConfirm" class="button primary">
+                <i class="fa-solid fa-download"></i> Confirmer l'installation
+            </a>
+        </div>
+    </div>
+</div>

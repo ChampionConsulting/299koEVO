@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{lang.getLocale}}">
+<html lang="{{lang.getLocale}}" {{SHOW.htmlThemeAttrs}}>
 	<head>
 		{% HOOK.frontHead %}
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>

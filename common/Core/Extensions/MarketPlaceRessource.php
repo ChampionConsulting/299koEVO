@@ -40,6 +40,12 @@ class MarketPlaceRessource
 
     public string $exclusiveLabel = '';
 
+    public bool $isCommunity = false;
+
+    public bool $isOfficial = true;
+
+    public string $channel = 'official';
+
     public array $requiredPlugins = [];
 
     protected $origRessource;
@@ -64,6 +70,15 @@ class MarketPlaceRessource
         $this->versionsUpdate = $origRessource->versionsUpdate ?? new stdClass();
         $this->isExclusive = !empty($origRessource->exclusive);
         $this->exclusiveLabel = (string)($origRessource->exclusive_label ?? ($this->isExclusive ? 'Exclusivité privée' : ''));
+        $this->channel = (string)($origRessource->channel ?? ($this->isExclusive ? 'exclusive' : 'official'));
+        $this->isCommunity = !empty($origRessource->is_community)
+            || !empty($origRessource->community)
+            || $this->channel === 'community'
+            || (!empty($this->authorEmail)
+                && !preg_match('/@(flexcb\.fr|299ko\.com|nemstudio)/i', $this->authorEmail)
+                && strpos(strtolower($this->authorWebsite), '299ko.flexcb.fr') === false
+                && !$this->isExclusive);
+        $this->isOfficial = !$this->isExclusive && !$this->isCommunity;
 
         if ($this->type === self::TYPE_PLUGIN) {
             $plu = PluginsManager::getInstance()->getPlugin($this->slug);
@@ -117,6 +132,21 @@ class MarketPlaceRessource
             }
         }
         return $missing;
+    }
+
+    public function isCommunity(): bool
+    {
+        return $this->isCommunity;
+    }
+
+    public function isOfficial(): bool
+    {
+        return $this->isOfficial;
+    }
+
+    public function getChannel(): string
+    {
+        return $this->channel;
     }
 
     public function getLocalHash(): ?string

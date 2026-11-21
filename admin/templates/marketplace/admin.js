@@ -23,10 +23,13 @@ function initMarketplaceToolbars() {
         }
 
         // Calculate counts per category
-        const counts = { all: items.length, updates: 0, exclusive: 0 };
+        const counts = { all: items.length, updates: 0, exclusive: 0, official: 0, community: 0 };
         items.forEach(function (item) {
             const cat = item.getAttribute('data-category') || 'system';
             counts[cat] = (counts[cat] || 0) + 1;
+            const channel = item.getAttribute('data-channel') || 'official';
+            if (channel === 'official') counts.official++;
+            if (channel === 'community') counts.community++;
             if (item.classList.contains('has-update')) {
                 counts.updates++;
             }
@@ -94,6 +97,10 @@ function initMarketplaceToolbars() {
                     matchesCat = isUpdate;
                 } else if (currentCat === 'exclusive') {
                     matchesCat = isExclusive;
+                } else if (currentCat === 'official') {
+                    matchesCat = (item.getAttribute('data-channel') === 'official');
+                } else if (currentCat === 'community') {
+                    matchesCat = (item.getAttribute('data-channel') === 'community');
                 } else {
                     matchesCat = (itemCat === currentCat);
                 }
