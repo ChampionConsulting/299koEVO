@@ -1031,9 +1031,11 @@ body.theme-dark a.evo-btn-secondary {
     display: flex;
     justify-content: center;
 }
-.dc-error-btn {
-    background: var(--evo-accent);
-    color: var(--evo-accent-text);
+.dc-error-btn,
+a.dc-error-btn,
+a.dc-error-btn:visited {
+    background: var(--evo-accent) !important;
+    color: var(--evo-accent-text, #ffffff) !important;
     font-weight: 700;
     padding: 12px 26px;
     border-radius: 10px;
@@ -1044,9 +1046,15 @@ body.theme-dark a.evo-btn-secondary {
     box-shadow: var(--evo-shadow-sm);
     transition: transform 0.15s ease, background-color 0.15s ease;
 }
-.dc-error-btn:hover {
-    background: var(--evo-accent-hover);
+.dc-error-btn:hover,
+a.dc-error-btn:hover {
+    background: var(--evo-accent-hover) !important;
+    color: var(--evo-accent-text, #ffffff) !important;
     transform: translateY(-1px);
+}
+.dc-error-btn *,
+a.dc-error-btn * {
+    color: var(--evo-accent-text, #ffffff) !important;
 }
 .dc-error-redirect {
     margin: 18px 0 0;
