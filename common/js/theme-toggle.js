@@ -11,6 +11,22 @@
     let toggleBtn = null;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
 
+    // Application immédiate avant le rendu complet du DOM pour éliminer tout flash
+    try {
+        const earlySaved = (document.cookie.match(/(?:^|; )theme=([^;]*)/) || [])[1] || localStorage.getItem(THEME_KEY) || 'auto';
+        const isDark = (earlySaved === 'dark') || (earlySaved === 'auto' && mq.matches);
+        const html = document.documentElement;
+        if (isDark) {
+            html.setAttribute('data-theme', 'dark');
+            html.classList.add('theme-dark');
+            html.classList.remove('theme-light');
+        } else if (earlySaved === 'light') {
+            html.setAttribute('data-theme', 'light');
+            html.classList.add('theme-light');
+            html.classList.remove('theme-dark');
+        }
+    } catch(e) {}
+
     // Applique l'état sur le DOM (ajoute/enlève classes sur <body> et <html>)
     function applyTheme(theme) {
         const body = document.body;

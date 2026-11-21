@@ -105,6 +105,8 @@ class Show
             $pluginsManager = PluginsManager::getInstance();
             $activePlugin = $core->getPluginToCall();
             $isAdminAssets = self::isAdminAssetsMode();
+            // Script Anti-FOUC immédiat : applique le mode sombre/clair sur <html> et <body> dès le parsing de l'en-tête, avant le 1er rendu CSS
+            echo '<script>!function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var t=(m?m[1]:null)||localStorage.getItem("theme_preference")||localStorage.getItem("user-theme");var d="dark"===t||(!t&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d){document.documentElement.setAttribute("data-theme","dark");document.documentElement.classList.add("theme-dark");document.documentElement.classList.remove("theme-light");}else if("light"===t){document.documentElement.setAttribute("data-theme","light");document.documentElement.classList.add("theme-light");document.documentElement.classList.remove("theme-dark");}if(window.MutationObserver){new MutationObserver(function(b,o){if(document.body){if(d){document.body.classList.add("theme-dark");document.body.classList.remove("theme-light");}else if("light"===t){document.body.classList.add("theme-light");document.body.classList.remove("theme-dark");}o.disconnect();}}).observe(document.documentElement,{childList:true});}}catch(e){}}();</script>';
             if (!$isAdminAssets) {
                 $coreCss = 'common/css/evo-core.css';
                 if (file_exists(ROOT . $coreCss)) {
@@ -319,6 +321,40 @@ class Show
             } else {
                 echo $core->getConfigVal('siteDesc');
             }
+        }
+    }
+
+    ## Attributs de thème pour <html> (anti-flash FOUC)
+    public static function htmlThemeAttrs(): void
+    {
+        $theme = $_COOKIE['theme'] ?? null;
+        if (!$theme && class_exists('\Core\Auth\UsersManager')) {
+            $user = \Core\Auth\UsersManager::getCurrentUser();
+            if ($user && isset($user->theme_preference)) {
+                $theme = $user->theme_preference;
+            }
+        }
+        if ($theme === 'dark') {
+            echo 'data-theme="dark" class="theme-dark"';
+        } elseif ($theme === 'light') {
+            echo 'data-theme="light" class="theme-light"';
+        }
+    }
+
+    ## Classe de thème pour <body> (anti-flash FOUC)
+    public static function bodyThemeClass(): void
+    {
+        $theme = $_COOKIE['theme'] ?? null;
+        if (!$theme && class_exists('\Core\Auth\UsersManager')) {
+            $user = \Core\Auth\UsersManager::getCurrentUser();
+            if ($user && isset($user->theme_preference)) {
+                $theme = $user->theme_preference;
+            }
+        }
+        if ($theme === 'dark') {
+            echo 'theme-dark';
+        } elseif ($theme === 'light') {
+            echo 'theme-light';
         }
     }
 

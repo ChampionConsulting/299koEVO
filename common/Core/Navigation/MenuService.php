@@ -312,9 +312,11 @@ class MenuService
                 $pluginName,
                 "{$pluginName}-index",
                 "{$pluginName}-home",
+                "{$pluginName}-shop",
                 strtolower($pluginName),
                 strtolower($pluginName) . "-index",
                 strtolower($pluginName) . "-home",
+                strtolower($pluginName) . "-shop",
                 "rdv-public-home", // fallback specifique ProRdv
             ];
             foreach ($candidates as $candidate) {
@@ -329,9 +331,10 @@ class MenuService
             if ($pluginObj) {
                 $hpm = $pluginObj->getInfoVal('homePublicMethod');
                 if (!empty($hpm)) {
+                    $cleanHpm = ltrim($hpm, '\\');
                     foreach ($router->getRoutes() as $r) {
                         // $r = [$method, $pattern, $target, $name]
-                        if (($r[2] ?? '') === $hpm && !empty($r[3])) {
+                        if (ltrim($r[2] ?? '', '\\') === $cleanHpm && !empty($r[3])) {
                             $u = $router->generate($r[3]);
                             if ($u !== '#') {
                                 return $u;
