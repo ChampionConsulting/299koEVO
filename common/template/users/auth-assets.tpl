@@ -1,3 +1,5 @@
+<meta name="robots" content="noindex, nofollow">
+<meta name="googlebot" content="noindex, nofollow">
 <style>
 /* Anti-Spam Honeypot Field Hidden Rule */
 .hp-field, input[name="_hp_website"] {

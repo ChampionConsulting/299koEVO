@@ -27,6 +27,23 @@ defined('ROOT') or exit('Access denied!');
 class UsersLoginController extends PublicController
 {
 
+    private function enforceRateLimit(string $action = 'auth', int $limit = 20, int $window = 60): void
+    {
+        if (class_exists('\Core\Auth\UsersManager') && \Core\Auth\UsersManager::isLogged()) {
+            return;
+        }
+        if (class_exists('\Utils\RateLimiter')) {
+            $limiter = new \Utils\RateLimiter();
+            if (!$limiter->check('users_' . $action, $limit, $window)) {
+                http_response_code(429);
+                header('Retry-After: ' . $window);
+                header('Content-Type: text/html; charset=utf-8');
+                echo '<!DOCTYPE html><html><head><title>429 Too Many Requests</title><meta name="robots" content="noindex, nofollow"></head><body style="font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:50px 20px;background:#f8fafc;color:#1e293b;"><div style="max-width:500px;margin:auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.06);border:1px solid #e2e8f0;"><h1 style="color:#ef4444;font-size:1.5rem;margin-bottom:12px;">429 • Trop de requêtes</h1><p style="font-size:1rem;color:#64748b;line-height:1.6;">Trop de tentatives détectées depuis votre adresse IP. Veuillez patienter une minute avant de réessayer.</p></div></body></html>';
+                exit;
+            }
+        }
+    }
+
     private function sanitizeReturnUrl(?string $url): ?string
     {
         if (!is_string($url)) {
@@ -53,6 +70,8 @@ class UsersLoginController extends PublicController
 
     public function login()
     {
+        $this->enforceRateLimit('view', 25, 60);
+
         // Traiter les messages personnalisés pour les redirections d'actions (Phase Guest Actions)
         $msgType = $_GET['msg'] ?? null;
         $poiName = $_GET['poi_name'] ?? null;
@@ -108,6 +127,7 @@ class UsersLoginController extends PublicController
 
     public function register()
     {
+        $this->enforceRateLimit('view', 25, 60);
         $this->ensureRegistrationEnabled();
         $response = new PublicResponse();
         $response->setTitle(Lang::get('users-registration-title'));
@@ -121,6 +141,7 @@ class UsersLoginController extends PublicController
 
     public function registerSend()
     {
+        $this->enforceRateLimit('submit', 5, 60);
         $this->ensureRegistrationEnabled();
         if (!Csrf::validate($_POST['_csrf'] ?? null, false)) {
             Show::msg(Lang::get("users.bad-credentials"), 'error');
@@ -237,6 +258,7 @@ class UsersLoginController extends PublicController
 
     public function loginSend()
     {
+        $this->enforceRateLimit('submit', 8, 60);
         if (!Csrf::validate($_POST['_csrf'] ?? null, false)) {
             Show::msg(Lang::get("users.bad-credentials"), 'error');
             $this->core->redirect($this->router->generate('login'));
@@ -300,6 +322,7 @@ class UsersLoginController extends PublicController
 
     public function lostPassword()
     {
+        $this->enforceRateLimit('view', 15, 60);
         $response = new StringResponse();
         $tpl = $response->createPluginTemplate('users', 'lostpwd');
         $tpl->set('lostPwdLink', $this->router->generate('lost-password-send'));
@@ -310,6 +333,7 @@ class UsersLoginController extends PublicController
 
     public function lostPasswordSend()
     {
+        $this->enforceRateLimit('submit', 5, 60);
         if (!Csrf::validate($_POST['_csrf'] ?? null, false)) {
             Show::msg(Lang::get("users.bad-credentials"), 'error');
             $this->core->redirect($this->router->generate('login'));

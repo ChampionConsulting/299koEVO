@@ -6,3 +6,6 @@ Allow: /
 Disallow: /admin/
 Disallow: /users/
 Disallow: /messaging/
+Disallow: /claim/
+Disallow: /api/
+Disallow: /ajax/
