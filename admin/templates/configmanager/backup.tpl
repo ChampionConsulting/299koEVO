@@ -1,4 +1,4 @@
-﻿<section class="overflow-auto adm-backup-section">
+<section class="overflow-auto adm-backup-section">
     <header class="adm-section-header">
         <div class="adm-header-title">
             <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
