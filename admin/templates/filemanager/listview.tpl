@@ -51,6 +51,11 @@
             <button type="button" class="button success small" data-fm-action="toggle-new-folder">
                 <i class="fa-solid fa-folder-plus"></i> {{Lang.filemanager.add-folder}}
             </button>
+            {% if not ajaxView %}
+            <a href="{{inspectorUrl}}" class="button secondary small" style="margin-left: auto;">
+                <i class="fa-solid fa-broom-ball"></i> Audit &amp; Nettoyage
+            </a>
+            {% endif %}
         </div>
     </div>
 
