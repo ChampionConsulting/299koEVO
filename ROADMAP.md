@@ -75,7 +75,7 @@ flowchart TD
 #### Infrastructure & Système
 - [x] **`SystemMonitor`** : Dashboard technique en temps réel (`/admin/monitor`) mesurant la latence du Core en ms, la mémoire vive RAM PHP, le chronométrage unitaire des Hooks et le volume d'opérations d'I/O (JSON & SQL) avec rafraîchissement direct Fetch.
 - [x] **`BackupManager` & `SiteExporter`** : Sauvegarde 1-clic et migration intégrale (code + data + médias) en ZIP sécurisé, snapshots automatiques pré-mise à jour (Core & Marketplace) et restauration d'urgence.
-- [ ] **`MediaManager`** : Médiathèque transversale avec détection des fichiers inutilisés, conversion WebP et gestion des droits.
+- [x] **`MediaManager`** : Médiathèque transversale avec détection des fichiers inutilisés (`MediaInspector`), conversion WebP par lot et gestion des droits.
 
 #### Outils Développeurs & Automatisation
 - [x] **`Workflow`** : Orchestrateur d'événements sans code (triggers, conditions logiques, actions Webhooks HTTP, e-mails, logs et exécution asynchrone différée via `TaskScheduler`).
@@ -83,7 +83,7 @@ flowchart TD
 - [ ] **`PluginSandbox`** : Environnement de test éphémère pour exécuter un plugin sans impacter le site réel.
 
 #### Évolutions des Extensions & Plugins
-- [ ] **`Design Tokens Universels (--evo-*)`** : Migration des feuilles de style `public.css` de l'ensemble des plugins vers les variables CSS standardisées (`--evo-bg`, `--evo-card-bg`, `--evo-text`, `--evo-border`, `--evo-accent`) pour garantir une adaptation caméléon native et automatique sur 100% des thèmes sombres et clairs.
+- [x] **`Design Tokens Universels (--evo-*)`** : Migration des feuilles de style `public.css` de l'ensemble des plugins vers les variables CSS standardisées (`--evo-bg`, `--evo-card-bg`, `--evo-text`, `--evo-border`, `--evo-accent`) pour garantir une adaptation caméléon native et automatique sur 100% des thèmes sombres et clairs.
 - [x] **`Blog` (Gestion temporelle et éditoriale fine & Modernisation PSR-4)** :
   - **Séparation des dates** : distinction claire entre date de création (`created_at`), date de parution/publication effective (`published_at`) et date de dernière modification (`updated_at`).
   - **Précision horaire** : passage du format jour simple (`Y-m-d`) à l'horodatage complet (`Y-m-d H:i:s`) avec heure et minute.

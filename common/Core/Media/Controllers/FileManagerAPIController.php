@@ -49,6 +49,78 @@ class FileManagerAPIController extends AdminController
         return $this->render();
     }
 
+    public function inspector()
+    {
+        $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+        $ctx = new \Core\Navigation\ConditionContext($this->user);
+        if (!$evaluator->canAccess(new \Core\Navigation\GenericResource('filemanager:admin'), $ctx)) {
+            $this->core->error403();
+        }
+
+        $audit = $this->media->inspector()->audit();
+
+        $response = new AdminResponse();
+        $tpl = $response->createPluginTemplate('filemanager', 'inspector');
+
+        $tpl->set('token', $this->user->token);
+        $tpl->set('stats', $audit['stats']);
+        $tpl->set('orphans', $audit['orphans']);
+        $tpl->set('nonWebp', $audit['non_webp']);
+        $tpl->set('used', $audit['used']);
+        $tpl->set('cleanUrl', $this->router->generate('filemanager-clean-orphans', ['token' => $this->user->token]));
+        $tpl->set('convertUrl', $this->router->generate('filemanager-convert-webp', ['token' => $this->user->token]));
+        $tpl->set('backUrl', $this->router->generate('filemanager-home'));
+
+        $response->setTitle('Médiathèque : Audit & Nettoyage');
+        $response->addTemplate($tpl);
+        return $response;
+    }
+
+    public function cleanOrphans($token)
+    {
+        $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+        $ctx = new \Core\Navigation\ConditionContext($this->user);
+        if (!$evaluator->canAccess(new \Core\Navigation\GenericResource('filemanager:admin'), $ctx) || $this->user->token !== $token) {
+            \Utils\Show::msg(\Core\Lang::get('core-not-authorized') ?: 'Action non autorisée.', 'error');
+            $this->core->redirect($this->router->generate('filemanager-inspector'));
+            return;
+        }
+
+        $targets = isset($_POST['orphans']) && is_array($_POST['orphans']) ? $_POST['orphans'] : null;
+        $result = $this->media->inspector()->cleanOrphans($targets);
+
+        if ($result['deleted_count'] > 0) {
+            \Utils\Show::msg("{$result['deleted_count']} fichier(s) orphelin(s) supprimé(s) ({$result['freed_formatted']} libérés).", 'success');
+        } else {
+            \Utils\Show::msg("Aucun fichier orphelin supprimé.", 'info');
+        }
+
+        $this->core->redirect($this->router->generate('filemanager-inspector'));
+    }
+
+    public function convertWebp($token)
+    {
+        $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+        $ctx = new \Core\Navigation\ConditionContext($this->user);
+        if (!$evaluator->canAccess(new \Core\Navigation\GenericResource('filemanager:admin'), $ctx) || $this->user->token !== $token) {
+            \Utils\Show::msg(\Core\Lang::get('core-not-authorized') ?: 'Action non autorisée.', 'error');
+            $this->core->redirect($this->router->generate('filemanager-inspector'));
+            return;
+        }
+
+        $targets = isset($_POST['images']) && is_array($_POST['images']) ? $_POST['images'] : null;
+        $deleteOrig = isset($_POST['delete_original']) && $_POST['delete_original'] === '1';
+        $result = $this->media->inspector()->convertBulkWebP($targets, $deleteOrig);
+
+        if ($result['converted_count'] > 0) {
+            \Utils\Show::msg("{$result['converted_count']} image(s) convertie(s) en WebP ({$result['saved_formatted']} d'espace économisé).", 'success');
+        } else {
+            \Utils\Show::msg("Aucune image convertie.", 'info');
+        }
+
+        $this->core->redirect($this->router->generate('filemanager-inspector'));
+    }
+
     public function view()
     {
         // POST/REDIRECT/GET pattern to avoid resubmission on F5
@@ -276,6 +348,7 @@ class FileManagerAPIController extends AdminController
         $tpl->set('uploadUrl', $this->router->generate('filemanager-upload', ['token' => $this->user->token]));
         $tpl->set('deleteUrl', $this->router->generate('filemanager-delete', ['token' => $this->user->token]));
         $tpl->set('createUrl', $this->router->generate('filemanager-create', ['token' => $this->user->token]));
+        $tpl->set('inspectorUrl', $this->router->generate('filemanager-inspector'));
         $tpl->set('redirectUrl', $this->router->generate('filemanager-view'));
         $tpl->set('redirectAjaxUrl', $this->router->generate('filemanager-view-ajax'));
         $tpl->set('editor', $this->editor);

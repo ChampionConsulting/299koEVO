@@ -50,6 +50,11 @@ class MediaService
         return new FileManager($absolute);
     }
 
+    public function inspector(): MediaInspector
+    {
+        return MediaInspector::getInstance();
+    }
+
     public function renderManagerButton($textareaId = false, $buttonLabel = null): string
     {
         $buttonLabel = $buttonLabel ?: Lang::get('filemanager.button-label');
@@ -140,6 +145,9 @@ class MediaService
         $this->routesRegistered = true;
 
         $router->map('GET', '/admin/filemanager[/?]', 'Core\Media\Controllers\FileManagerAPIController#home', 'filemanager-home');
+        $router->map('GET', '/admin/filemanager/inspector[/?]', 'Core\Media\Controllers\FileManagerAPIController#inspector', 'filemanager-inspector');
+        $router->map('POST', '/admin/filemanager/inspector/clean/[a:token]', 'Core\Media\Controllers\FileManagerAPIController#cleanOrphans', 'filemanager-clean-orphans');
+        $router->map('POST', '/admin/filemanager/inspector/convert/[a:token]', 'Core\Media\Controllers\FileManagerAPIController#convertWebp', 'filemanager-convert-webp');
         $router->map('POST', '/admin/filemanager/view-ajax/upload/[a:token]', 'Core\Media\Controllers\FileManagerAPIController#upload', 'filemanager-upload');
         $router->map('POST', '/admin/filemanager/view-ajax/delete/[a:token]', 'Core\Media\Controllers\FileManagerAPIController#delete', 'filemanager-delete');
         $router->map('POST', '/admin/filemanager/view-ajax/create/[a:token]', 'Core\Media\Controllers\FileManagerAPIController#create', 'filemanager-create');

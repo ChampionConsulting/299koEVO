@@ -45,7 +45,7 @@ class UpdaterManager
         return $this->baseUrl;
     }
 
-    public function __construct(bool $fetchRemote = false)
+    public function __construct(bool $fetchRemote = true)
     {
         $this->isReady = false;
         if ($fetchRemote) {

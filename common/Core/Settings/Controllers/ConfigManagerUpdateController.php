@@ -21,12 +21,11 @@ class ConfigManagerUpdateController extends AdminController {
 
     public function process($token) {
         $actor = $this->user->email ?? 'unknown';
-        $updaterManager = new UpdaterManager();
-        if ($updaterManager->isReady) {
-            $nextVersion = $updaterManager->getNextVersion();
-        } else {
-            $nextVersion = false;
-        }
+        $updaterManager = new UpdaterManager(true);
+        $nextVersion = $updaterManager->getNextVersion();
+        $settings = \Core\Core::getInstance()->settings();
+        $cacheFile = $settings->cacheFile();
+
         $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
         $ctx = new \Core\Navigation\ConditionContext($this->user);
         if ($nextVersion && $evaluator->isAdmin($ctx)) {
@@ -40,11 +39,28 @@ class ConfigManagerUpdateController extends AdminController {
                 $this->logger->info('Config update applied to ' . $label . ' by ' . $actor);
                 show::msg($isPatch ? "Le correctif de sécurité {$label} a été appliqué avec succès." : Lang::get('configmanager-updated', $nextVersion), 'success');
                 $updaterManager->clearCache();
+                
+                // Nettoyer immédiatement le cache local de version
+                $cached = \Utils\Util::readJsonFile($cacheFile);
+                if (is_array($cached)) {
+                    $cached['nextVersion'] = false;
+                    $cached['isPatch'] = false;
+                    $cached['lastCheckUpdate'] = time();
+                    \Utils\Util::writeJsonFile($cacheFile, $cached);
+                }
             } else {
                 $this->logger->error('Config update failed for ' . $nextVersion . ' by ' . $actor);
                 show::msg(Lang::get('configmanager-update-error'), 'error');
             }
-            $this->core->redirect($this->router->generate('configmanager-admin'));
+        } else {
+            // Pas de mise à jour réelle : nettoyer le cache obsolète
+            $cached = \Utils\Util::readJsonFile($cacheFile);
+            if (is_array($cached)) {
+                $cached['nextVersion'] = false;
+                $cached['isPatch'] = false;
+                $cached['lastCheckUpdate'] = time();
+                \Utils\Util::writeJsonFile($cacheFile, $cached);
+            }
         }
         $this->core->redirect($this->router->generate('configmanager-admin'));
     }

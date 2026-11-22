@@ -321,8 +321,8 @@ class SettingsService
 
     public function getNewVersion()
     {
-        $updaterManager = new UpdaterManager();
-        $nextVersion = $updaterManager->isReady ? $updaterManager->getNextVersion() : false;
+        $updaterManager = new UpdaterManager(true);
+        $nextVersion = $updaterManager->getNextVersion();
         $cachedInfos = Util::readJsonFile($this->cacheFile);
         if (!is_array($cachedInfos)) {
             $cachedInfos = [];
@@ -472,9 +472,20 @@ class SettingsService
     public function getAdminNavigationEntries(): array
     {
         $cachedInfos = Util::readJsonFile($this->cacheFile);
-        $hasUpdate = !empty($cachedInfos['nextVersion']);
-        $isPatch = !empty($cachedInfos['isPatch']);
         $nextVersion = $cachedInfos['nextVersion'] ?? '';
+        $isPatch = !empty($cachedInfos['isPatch']);
+        $currentVersion = defined('VERSION') ? VERSION : '';
+        
+        $hasUpdate = false;
+        if (!empty($nextVersion)) {
+            if ($isPatch) {
+                $updater = new UpdaterManager(false);
+                $localCommit = $updater->getLocalCommit();
+                $hasUpdate = ($localCommit === null || strtolower(substr($localCommit, 0, 7)) !== strtolower(substr((string) $nextVersion, 0, 7)));
+            } else {
+                $hasUpdate = version_compare((string) $nextVersion, $currentVersion, '>');
+            }
+        }
 
         $entries = [];
         foreach ($this->adminModules as $module) {

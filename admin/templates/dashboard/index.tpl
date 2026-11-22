@@ -127,7 +127,7 @@
                                         <i class="fa-regular fa-file-code"></i>
                                         <span class="adm-page-title">{{p.name}}</span>
                                         {% if p.isHome %}
-                                            <span class="adm-badge adm-badge-gold">Accueil</span>
+                                            <span class="adm-badge adm-badge-gold"><i class="fa-solid fa-house"></i> Page d'accueil</span>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -204,7 +204,7 @@
                             <div class="adm-user-info">
                                 <strong>{{u.username}}</strong>
                                 <span>{{u.email}}</span>
-                                <small class="adm-badge adm-badge-indigo">{{u.role}}</small>
+                                <small class="adm-badge {% if u.role == 'Administrateur' %}adm-badge-gold{% else %}adm-badge-indigo{% endif %}">{{u.role}}</small>
                             </div>
                         </div>
                         {% endfor %}

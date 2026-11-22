@@ -5,13 +5,13 @@
 ### *Your website. Your data. Your freedom.*
 **A CMS that truly belongs to you. Lightweight, modular, and independent.**
 
-[![Version](https://img.shields.io/badge/version-v0.4.0-blue.svg?style=flat-square)](https://github.com/NemStudio18/299koEVO/releases)
+[![Version](https://img.shields.io/badge/version-v0.4.1-blue.svg?style=flat-square)](https://github.com/NemStudio18/299koEVO/releases)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3%20%7C%208.4-777bb4.svg?style=flat-square&logo=php)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg?style=flat-square)](LICENSE)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Sovereign-0284c7.svg?style=flat-square)](https://299ko.flexcb.fr)
 [![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20SQLite%20%7C%20MySQL-orange.svg?style=flat-square)](#05--storage--architecture)
 
-[🇫🇷 Lire en français](README.fr.md) • [🌐 Live Demo](https://299ko.flexcb.fr/) • [💬 GitHub Discussions](https://github.com/NemStudio18/299koEVO/discussions) • [📦 Download (v0.4.0)](https://github.com/NemStudio18/299koEVO/releases)
+[🇫🇷 Lire en français](README.fr.md) • [🌐 Live Demo](https://299ko.flexcb.fr/) • [💬 GitHub Discussions](https://github.com/NemStudio18/299koEVO/discussions) • [📦 Download (v0.4.1)](https://github.com/NemStudio18/299koEVO/releases)
 
 ---
 
