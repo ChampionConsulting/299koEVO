@@ -83,6 +83,7 @@ flowchart TD
 - [ ] **`PluginSandbox`** : Environnement de test éphémère pour exécuter un plugin sans impacter le site réel.
 
 #### Évolutions des Extensions & Plugins
+- [ ] **`Design Tokens Universels (--evo-*)`** : Migration des feuilles de style `public.css` de l'ensemble des plugins vers les variables CSS standardisées (`--evo-bg`, `--evo-card-bg`, `--evo-text`, `--evo-border`, `--evo-accent`) pour garantir une adaptation caméléon native et automatique sur 100% des thèmes sombres et clairs.
 - [x] **`Blog` (Gestion temporelle et éditoriale fine & Modernisation PSR-4)** :
   - **Séparation des dates** : distinction claire entre date de création (`created_at`), date de parution/publication effective (`published_at`) et date de dernière modification (`updated_at`).
   - **Précision horaire** : passage du format jour simple (`Y-m-d`) à l'horodatage complet (`Y-m-d H:i:s`) avec heure et minute.
@@ -116,4 +117,5 @@ flowchart TD
 - **`MediaManager`**: Centralized asset library with orphan detection and WebP processing.
 - [x] **`Workflow`**: Sovereign no-code event orchestrator (triggers, conditions, HTTP webhooks, emails, and TaskScheduler async jobs).
 - **`TranslationManager`**: Graphical dictionary diff and missing keys detector.
+- [ ] **`Universal CSS Tokens (--evo-*)`**: Modernize all plugin stylesheets to use standardized CSS custom properties (`--evo-bg`, `--evo-card-bg`, `--evo-text`, `--evo-border`, `--evo-accent`) ensuring native chameleon adaptation on 100% of dark and light themes without requiring theme-specific CSS.
 - **`Blog` (Advanced Editorial Scheduling & Timestamps)**: Distinct creation date (`created_at`), scheduled publication date (`published_at`), and revision date (`updated_at`) with full hour/minute precision (`Y-m-d H:i:s`), plus conditional "Updated on..." display.
