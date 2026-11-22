@@ -165,7 +165,15 @@ class WorkflowManager
     {
         $evaluator = AccessPolicyEvaluator::getInstance();
         $ctx = new ConditionContext($user);
-        $policy = is_array($rule) ? $rule : [['type' => 'permission', 'value' => $rule]];
+        if (is_string($rule)) {
+            $policy = [['type' => 'permission', 'value' => $rule]];
+        } elseif (isset($rule['type']) || isset($rule['provider']) || isset($rule['logic'])) {
+            // C'est un nœud de condition unique ou un groupe
+            $policy = [$rule];
+        } else {
+            // C'est déjà une liste de conditions
+            $policy = $rule;
+        }
         $resId = 'editorial:workflow:' . md5((string) json_encode($policy));
         return $evaluator->canAccess(new GenericResource($resId, $policy, ['PUB' => false]), $ctx);
     }

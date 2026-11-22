@@ -272,6 +272,18 @@ class AccessPolicyEvaluator
             return true;
         }
 
+        // Si $conditions est un nœud de condition unique non indexé
+        if (isset($conditions['type']) || isset($conditions['provider']) || isset($conditions['logic'])) {
+            $conditions = [$conditions];
+        } else {
+            // Filtrer pour s'assurer que chaque élément est un array
+            $conditions = array_values(array_filter($conditions, 'is_array'));
+        }
+
+        if (empty($conditions)) {
+            return true;
+        }
+
         // Trier les conditions par coût
         usort($conditions, function($a, $b) {
             $costA = $this->getConditionCost($a);
@@ -345,8 +357,12 @@ class AccessPolicyEvaluator
     /**
      * Estime le coût d'une condition.
      */
-    private function getConditionCost(array $node): int
+    private function getConditionCost(mixed $node): int
     {
+        if (!is_array($node)) {
+            return 100;
+        }
+
         if (isset($node['logic'])) {
             return 1;
         }
