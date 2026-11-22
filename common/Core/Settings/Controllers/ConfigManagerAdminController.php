@@ -261,8 +261,12 @@ class ConfigManagerAdminController extends AdminController {
             // Purger automatiquement le cache à chaque sauvegarde de configuration
             $cacheManager = new CacheManager();
             $cacheManager->clearCache();
-            // Rafraîchir immédiatement l'état des mises à jour selon le canal configuré
-            $this->core->settings()->getNewVersion();
+            // Réinitialiser le cache de mise à jour pour réévaluation asynchrone immédiate (0ms de blocage PHP)
+            $cachedInfos = \Utils\Util::readJsonFile($this->core->settings()->cacheFile());
+            if (is_array($cachedInfos)) {
+                $cachedInfos['lastCheckUpdate'] = 0;
+                \Utils\Util::writeJsonFile($this->core->settings()->cacheFile(), $cachedInfos);
+            }
             Show::msg(Lang::get("core-changes-saved"), 'success');
         }
         //$this->core->saveHtaccess($_POST['htaccess']);

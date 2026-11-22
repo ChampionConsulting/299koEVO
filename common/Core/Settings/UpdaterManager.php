@@ -45,31 +45,47 @@ class UpdaterManager
         return $this->baseUrl;
     }
 
-    public function __construct()
+    public function __construct(bool $fetchRemote = false)
     {
+        $this->isReady = false;
+        if ($fetchRemote) {
+            $this->initRemoteVersions();
+        }
+    }
+
+    /**
+     * Charge les métadonnées distantes des versions officielles depuis le Hub API
+     */
+    public function initRemoteVersions(): bool
+    {
+        if ($this->isReady) {
+            return true;
+        }
+
         if (!ini_get('allow_url_fopen') && !function_exists('curl_init')) {
             logg("Can't get remotes files", 'INFO');
             $this->isReady = false;
-            return;
+            return false;
         }
 
         $fileContent = $this->getRemoteFileContent($this->resolveApiBaseUrl() . 'repository/api/core/versions');
 
         if (!$fileContent) {
             $this->isReady = false;
-            return;
+            return false;
         }
 
         $file = json_decode($fileContent, true);
         if (!$file || !isset($file['last_version'])) {
             $this->isReady = false;
-            return;
+            return false;
         }
 
         $this->lastVersion = $file['last_version'];
         $this->latestCommit = isset($file['latest_commit']) && is_string($file['latest_commit']) ? trim($file['latest_commit']) : null;
         $this->metaDatas = $file;
         $this->isReady = true;
+        return true;
     }
 
     /**
@@ -171,6 +187,10 @@ class UpdaterManager
 
     public function getNextVersion()
     {
+        if (!$this->isReady) {
+            $this->initRemoteVersions();
+        }
+
         if (!$this->isReady || !$this->lastVersion) {
             return false;
         }
@@ -690,7 +710,8 @@ class UpdaterManager
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_TIMEOUT => 30,
+                CURLOPT_CONNECTTIMEOUT => 3,
+                CURLOPT_TIMEOUT => 5,
                 CURLOPT_USERAGENT => '299KoEVO-Updater/1.0',
             ]);
             $content = curl_exec($ch);
