@@ -274,3 +274,4 @@ class WorkflowAdminController extends AdminController
         $this->core->redirect($this->router->generate('workflow-admin'));
     }
 }
+

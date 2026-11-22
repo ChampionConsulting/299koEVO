@@ -253,3 +253,4 @@ html[data-theme="dark"] .workflow-table td { border-color: #334155; color: #cbd5
 :root[data-theme="dark"] .table-responsive,
 html[data-theme="dark"] .table-responsive { border-color: #334155; }
 </style>
+

@@ -604,3 +604,4 @@ class WorkflowManager
         return true;
     }
 }
+
