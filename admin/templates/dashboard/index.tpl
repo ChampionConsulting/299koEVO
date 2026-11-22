@@ -204,7 +204,7 @@
                             <div class="adm-user-info">
                                 <strong>{{u.username}}</strong>
                                 <span>{{u.email}}</span>
-                                <small class="adm-badge adm-badge-indigo">{{u.role}}</small>
+                                <small class="adm-badge {% if u.role == 'Administrateur' %}adm-badge-gold{% else %}adm-badge-indigo{% endif %}">{{u.role}}</small>
                             </div>
                         </div>
                         {% endfor %}

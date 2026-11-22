@@ -186,11 +186,21 @@ class AdminDashboardController extends AdminController
         try {
             $rows = User::queryBuilder()->limit(5)->get();
             foreach ($rows as $u) {
+                $group = $u->getGroup();
+                $groupSlug = $group ? $group->getSlug() : null;
+                $roleLabel = match ($groupSlug) {
+                    'admin' => 'Administrateur',
+                    'editor' => 'Éditeur',
+                    'author' => 'Auteur',
+                    'member' => 'Membre',
+                    default => ($group->name ?? 'Membre'),
+                };
+
                 $users[] = [
                     'id'       => $u->id ?? 0,
                     'username' => $u->username ?? $u->name ?? $u->email,
                     'email'    => $u->email,
-                    'role'     => $u->group ?? 'Membre',
+                    'role'     => $roleLabel,
                     'date'     => !empty($u->created_at) ? date('d/m/Y', strtotime($u->created_at)) : '',
                 ];
             }
