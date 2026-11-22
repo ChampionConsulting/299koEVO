@@ -498,3 +498,4 @@ class MediaInspector
         return round($bytes, $precision) . ' ' . $units[(int) $pow];
     }
 }
+
