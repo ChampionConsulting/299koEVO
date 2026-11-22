@@ -287,7 +287,11 @@ var getNextSibling = function (elem, selector) {
 function initAdminAsyncUpdateCheck() {
     // Vérification asynchrone des mises à jour sans ralentir le chargement initial (0ms)
     setTimeout(function () {
-        fetch('admin/api/check-updates', {
+        const baseEl = document.querySelector('base');
+        const checkUrl = (baseEl && baseEl.href)
+            ? new URL('admin/api/check-updates', baseEl.href).href
+            : '/admin/api/check-updates';
+        fetch(checkUrl, {
             headers: { 'Accept': 'application/json' }
         })
         .then(function (res) { return res.json(); })
