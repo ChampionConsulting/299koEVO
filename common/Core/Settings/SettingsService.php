@@ -48,6 +48,11 @@ class SettingsService
             'label' => 'configmanager-backup-nav-title',
             'icon' => 'fa-solid fa-box-archive',
         ],
+        [
+            'name' => 'monitor',
+            'label' => 'configmanager-monitor-nav-title',
+            'icon' => 'fa-solid fa-chart-line',
+        ],
     ];
 
     public function __construct()
@@ -398,6 +403,11 @@ class SettingsService
         $router->map('POST', '/admin/storage/save-db', 'Core\Storage\Controllers\StorageAdminController#saveDatabase', 'storage-admin-save-db');
         $router->map('POST', '/admin/storage/migrate', 'Core\Storage\Controllers\StorageAdminController#migrate', 'storage-admin-migrate');
         $router->map('POST', '/admin/storage/repair-data', 'Core\Storage\Controllers\StorageAdminController#repairData', 'storage-admin-repair');
+
+        // Sovereign System Monitor & Telemetry
+        $router->map('GET', '/admin/monitor[/?]', 'Core\Monitor\Controllers\SystemMonitorAdminController#home', 'monitor-admin');
+        $router->map('POST', '/admin/monitor/reset', 'Core\Monitor\Controllers\SystemMonitorAdminController#reset', 'monitor-admin-reset');
+        $router->map('GET', '/admin/api/monitor/metrics', 'Core\Monitor\Controllers\SystemMonitorAdminController#apiMetrics', 'monitor-admin-api');
     }
 
     public function registerHooks(): void
@@ -418,6 +428,7 @@ class SettingsService
         $core->addHook('adminToolsTemplates', function () {
             if ($this->isCurrentModule()) {
                 echo '<a title="' . Lang::get('configmanager-backup') . '" id="configmanager-backup" href="' . Router::getInstance()->generate('configmanager-backup') . '"><i class="fa-solid fa-box-archive"></i></a>';
+                echo '<a title="Monitoring Système" id="configmanager-monitor" href="' . Router::getInstance()->generate('monitor-admin') . '"><i class="fa-solid fa-chart-line"></i></a>';
             }
         });
     }

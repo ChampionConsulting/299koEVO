@@ -514,6 +514,9 @@ class Show
 
             // Système & Administration
             'configmanager' => 'systeme',
+            'storage'       => 'systeme',
+            'monitor'       => 'systeme',
+            'backups'       => 'systeme',
             'pluginsmanager'=> 'systeme',
             'marketplace'   => 'systeme',
             'antispam'      => 'systeme',

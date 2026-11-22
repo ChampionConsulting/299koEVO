@@ -63,16 +63,17 @@ flowchart TD
 - [x] Déblocage des capacités asynchrones pour `newsletter`, `LocalFeed`, `BackupManager` et `Workflow`.
 
 #### 3. `DataInspector` (Priorité Haute) — Cohérence des données multi-moteurs
-- [ ] Détection des entités orphelines et références croisées cassées.
-- [ ] Nettoyage des doublons et validation des schémas JSON et SQLite.
-- [ ] Comparateur d'intégrité entre les moteurs de stockage.
+- [x] Détection des entités orphelines et références croisées cassées (liens de menus, catégories et commentaires de blog).
+- [x] Nettoyage des doublons de clés primaires et validation de syntaxe de 100% des fichiers JSON.
+- [x] Comparateur d'intégrité croisée multi-stockage (Flat-File JSON vs base SQL SQLite/MySQL).
+- [x] Outil d'auto-réparation en 1 clic intégré dans la gestion du stockage.
 
 ---
 
 ### 🎯 4. Modules d'Infrastructure & Évolutions Complémentaires
 
 #### Infrastructure & Système
-- [ ] **`SystemMonitor`** : Dashboard technique en temps réel (temps de réponse PHP, mémoire, temps des hooks, requêtes SQL).
+- [x] **`SystemMonitor`** : Dashboard technique en temps réel (`/admin/monitor`) mesurant la latence du Core en ms, la mémoire vive RAM PHP, le chronométrage unitaire des Hooks et le volume d'opérations d'I/O (JSON & SQL) avec rafraîchissement direct Fetch.
 - [x] **`BackupManager` & `SiteExporter`** : Sauvegarde 1-clic et migration intégrale (code + data + médias) en ZIP sécurisé, snapshots automatiques pré-mise à jour (Core & Marketplace) et restauration d'urgence.
 - [ ] **`MediaManager`** : Médiathèque transversale avec détection des fichiers inutilisés, conversion WebP et gestion des droits.
 
@@ -106,12 +107,12 @@ flowchart TD
 
 1. **`PluginInspector & Community Pipeline` (High Priority)**: Automated static security screening for extension ZIPs, developer submission portal, author update tokens, automated GitHub PR workflow on `Community_Plugins_299koEVO` for lead maintainer review, and marketplace badge distinctions (`Official` vs `Community`).
 2. **`TaskScheduler` (High Priority)**: Background job queue, recurring tasks, concurrency locks, and retry mechanism.
-3. **`DataInspector` (High Priority)**: Cross-storage consistency checks, broken reference detection, and data health verification.
+3. **`DataInspector` (High Priority)**: Cross-storage consistency checks (JSON vs SQL), broken reference and orphan detection, and 1-click auto-repair.
 
 ### 🎯 3. Next Milestones
 
-- **`SystemMonitor`**: Technical telemetry dashboard (PHP timing, memory, hook execution speed).
-- **`BackupManager` & `SiteExporter`**: 1-click snapshot export and seamless migration between servers.
+- [x] **`SystemMonitor`**: Sovereign real-time telemetry dashboard (`/admin/monitor`): latency in ms, peak PHP RAM, unit hook profiler, and JSON/SQL I/O counter with live Fetch auto-refresh.
+- [x] **`BackupManager` & `SiteExporter`**: 1-click snapshot export and seamless migration between servers.
 - **`MediaManager`**: Centralized asset library with orphan detection and WebP processing.
 - **`Workflow`**: Inter-plugin event orchestrator.
 - **`TranslationManager`**: Graphical dictionary diff and missing keys detector.

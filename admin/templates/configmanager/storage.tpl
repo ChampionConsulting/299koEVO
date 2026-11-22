@@ -388,6 +388,10 @@
                             <p><strong>{{ auditData.stats.json_files_valid }} / {{ auditData.stats.json_files_checked }}</strong> fichiers valides et lisibles.</p>
                         </div>
                         <div class="storage-help">
+                            <h4><i class="fa-solid fa-fingerprint"></i> Clés & Identifiants</h4>
+                            <p><strong>{{ auditData.stats.duplicate_ids_found|default(0) }}</strong> doublon(s) d'identifiant.</p>
+                        </div>
+                        <div class="storage-help">
                             <h4><i class="fa-solid fa-link"></i> Navigation & Menus</h4>
                             <p><strong>{{ auditData.stats.orphan_menu_items }}</strong> lien(s) rompu(s) détecté(s).</p>
                         </div>
@@ -399,10 +403,46 @@
                             <h4><i class="fa-solid fa-comments"></i> Commentaires</h4>
                             <p><strong>{{ auditData.stats.orphan_comments }}</strong> commentaire(s) orphelin(s).</p>
                         </div>
+                        <div class="storage-help">
+                            <h4><i class="fa-solid fa-arrows-rotate"></i> Synchro JSON ⇄ SQL</h4>
+                            <p>
+                                {% if auditData.stats.sql_integrity == 'connected' %}
+                                    {% if auditData.stats.cross_storage_synced %}
+                                        <span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-check"></i> 100% synchronisé</span>
+                                    {% else %}
+                                        <span style="color: #f59e0b; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> Écarts détectés</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: #64748b;">Moteur SQL inactif</span>
+                                {% endif %}
+                            </p>
+                        </div>
                     </div>
 
+                    <!-- Comparateur Croisé JSON vs SQL -->
+                    {% if auditData.stats.cross_storage_diffs|length > 0 %}
+                        <div class="db-config-grid" style="margin-bottom: 1.5rem; padding: 1rem; border: 1px solid var(--cb-border, #e2e8f0); border-radius: 8px; background: var(--cb-bg-alt, #f8fafc);">
+                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-scale-balanced" style="color: #6366f1;"></i> Comparateur d'intégrité croisée (Flat-File JSON vs Base SQL)
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                                {% for modelName, diff in auditData.stats.cross_storage_diffs %}
+                                    <div style="background: var(--cb-card-bg, #fff); padding: 0.75rem; border-radius: 6px; border-left: 3px solid {% if diff.synced %}#10b981{% else %}#f59e0b{% endif %}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;">{{ modelName }}</div>
+                                        <div style="font-size: 0.82rem; color: var(--cb-text-muted, #64748b);">
+                                            JSON: <strong>{{ diff.json }}</strong> | SQL: <strong>{{ diff.sql }}</strong>
+                                        </div>
+                                        <div style="font-size: 0.78rem; margin-top: 4px; font-weight: bold; color: {% if diff.synced %}#10b981{% else %}#f59e0b{% endif %};">
+                                            {% if diff.synced %}<i class="fa-solid fa-check"></i> Parfaitement synchronisé{% else %}<i class="fa-solid fa-triangle-exclamation"></i> Désynchronisé (écart de {{ diff.json - diff.sql }}){% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
                     <!-- Liste des anomalies -->
-                    {% if auditData.issues.critical|length > 0 or auditData.issues.warning|length > 0 %}
+                    {% if auditData.issues.critical|length > 0 or auditData.issues.warning|length > 0 or auditData.issues.info|length > 0 %}
                         <div class="issues-container" style="margin-top: 1.5rem;">
                             <h4 style="margin-bottom: 0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Détail des anomalies</h4>
                             
@@ -422,6 +462,17 @@
                                     <strong>Avertissements :</strong>
                                     <ul style="margin: 0.5rem 0 0 1.25rem;">
                                         {% for item in auditData.issues.warning %}
+                                            <li>{{ item.message|default(item) }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            {% if auditData.issues.info|length > 0 %}
+                                <div class="msg info" style="margin-bottom: 1rem;">
+                                    <strong>Informations :</strong>
+                                    <ul style="margin: 0.5rem 0 0 1.25rem;">
+                                        {% for item in auditData.issues.info %}
                                             <li>{{ item.message|default(item) }}</li>
                                         {% endfor %}
                                     </ul>
@@ -507,6 +558,10 @@ html[data-theme="dark"] .score-healthy { background: #064e3b; color: #6ee7b7; bo
 html[data-theme="dark"] .score-warning { background: #78350f; color: #fde68a; border-color: #d97706; }
 :root[data-theme="dark"] .score-critical,
 html[data-theme="dark"] .score-critical { background: #7f1d1d; color: #fca5a5; border-color: #dc2626; }
+:root[data-theme="dark"] .storage-help,
+html[data-theme="dark"] .storage-help { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .storage-help h4,
+html[data-theme="dark"] .storage-help h4 { color: #f1f5f9; }
 
 .storage-help { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid var(--success-color, #16a34a); border-radius: 12px; padding: 1.5rem; }
 .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; }

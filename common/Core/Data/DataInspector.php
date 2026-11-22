@@ -14,8 +14,8 @@ defined('ROOT') or exit('Access denied!');
  * Moteur d'audit d'intégrité des données et de cohérence multi-stockage (Flat-File JSON & SQL).
  * 
  * Analyse les fichiers de configuration, la cohérence des liens de navigation,
- * les références croisées (catégories/articles, commentaires/articles), et
- * permet la détection et la réparation des données orphelines.
+ * les références croisées (catégories/articles, commentaires/articles), la détection
+ * des doublons de clés primaires et la synchronisation miroir JSON vs SQL.
  */
 class DataInspector
 {
@@ -45,9 +45,12 @@ class DataInspector
         $this->stats = [
             'json_files_checked' => 0,
             'json_files_valid' => 0,
+            'duplicate_ids_found' => 0,
             'orphan_menu_items' => 0,
             'orphan_category_refs' => 0,
             'orphan_comments' => 0,
+            'cross_storage_synced' => true,
+            'cross_storage_diffs' => [],
             'sql_integrity' => 'non_configured',
             'scanned_at' => date('Y-m-d H:i:s'),
         ];
@@ -55,10 +58,13 @@ class DataInspector
         $this->auditJsonFiles();
         $this->auditMenuItems();
         $this->auditBlogIntegrity();
-        $this->auditSqlIntegrity();
+        $this->auditCrossStorageIntegrity();
 
-        $totalIssues = count($this->issues['critical']) + count($this->issues['warning']);
-        $score = max(0, 100 - (count($this->issues['critical']) * 25) - (count($this->issues['warning']) * 5));
+        $critCount = count($this->issues['critical']);
+        $warnCount = count($this->issues['warning']);
+        $infoCount = count($this->issues['info']);
+
+        $score = max(0, 100 - ($critCount * 25) - ($warnCount * 5) - ($infoCount * 1));
 
         return [
             'score' => $score,
@@ -81,10 +87,22 @@ class DataInspector
             $repaired[] = "{$cleanedCategories} référence(s) d'articles orphelins retirée(s) des catégories du blog.";
         }
 
-        // 2. Nettoyage des éléments de menu pointant vers des pages inexistantes
+        // 2. Nettoyage des fichiers de commentaires orphelins
+        $cleanedComments = $this->repairCommentOrphans();
+        if ($cleanedComments > 0) {
+            $repaired[] = "{$cleanedComments} fichier(s) de commentaires orphelin(s) supprimé(s).";
+        }
+
+        // 3. Nettoyage des éléments de menu pointant vers des pages inexistantes
         $cleanedMenus = $this->repairMenuOrphans();
         if ($cleanedMenus > 0) {
             $repaired[] = "{$cleanedMenus} lien(s) de menu rompu(s) nettoyé(s).";
+        }
+
+        // 4. Déduplication des clés primaires si des doublons ont été détectés
+        $dedupCount = $this->repairDuplicateIds();
+        if ($dedupCount > 0) {
+            $repaired[] = "{$dedupCount} enregistrement(s) en doublon d'identifiant réindexé(s).";
         }
 
         // Vider les caches applicatifs après réparation
@@ -102,7 +120,7 @@ class DataInspector
     }
 
     /**
-     * Contrôle la syntaxe et la lisibilité de tous les fichiers JSON essentiels.
+     * Contrôle la syntaxe et la lisibilité de tous les fichiers JSON essentiels et détecte les doublons d'IDs.
      */
     private function auditJsonFiles(): void
     {
@@ -110,6 +128,7 @@ class DataInspector
             'config.json' => DATA . 'config.json',
             'menu_items.json' => defined('DATA_CORE') ? DATA_CORE . 'menu_items.json' : DATA . 'core/menu_items.json',
             'users.json' => defined('DATA_CORE_AUTH') ? DATA_CORE_AUTH . 'users.json' : DATA . 'core/auth/users.json',
+            'pages.json' => defined('DATA_CORE_PAGE') ? DATA_CORE_PAGE . 'pages.json' : DATA . 'core/page/pages.json',
         ];
 
         // Ajouter les fichiers JSON de plugins
@@ -131,21 +150,41 @@ class DataInspector
             }
 
             $content = (string)@file_get_contents($absPath);
-            json_decode($content);
+            $decoded = json_decode($content, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $this->issues['critical'][] = "Erreur de syntaxe JSON dans {$relPath} : " . json_last_error_msg();
-            } else {
-                $this->stats['json_files_valid']++;
+                continue;
             }
+
+            $this->stats['json_files_valid']++;
 
             if (!is_writable($absPath)) {
                 $this->issues['warning'][] = "Fichier JSON en lecture seule (non modifiable) : {$relPath}";
+            }
+
+            // Vérification des doublons d'IDs dans les listes
+            if (is_array($decoded) && !empty($decoded)) {
+                $ids = [];
+                $hasDuplicates = false;
+                foreach ($decoded as $item) {
+                    if (is_array($item) && isset($item['id'])) {
+                        $id = (string)$item['id'];
+                        if (isset($ids[$id])) {
+                            $hasDuplicates = true;
+                            $this->stats['duplicate_ids_found']++;
+                        }
+                        $ids[$id] = true;
+                    }
+                }
+                if ($hasDuplicates) {
+                    $this->issues['warning'][] = "Doublons d'identifiants (IDs identiques) détectés dans {$relPath}.";
+                }
             }
         }
     }
 
     /**
-     * Vérifie que les liens de menu pointant vers des pages internes sont valides.
+     * Vérifie la cohérence des liens de navigation vers les pages internes.
      */
     private function auditMenuItems(): void
     {
@@ -162,12 +201,18 @@ class DataInspector
         $pageSlugs = $this->getExistingPageSlugs();
 
         foreach ($items as $item) {
-            $url = $item['url'] ?? '';
-            $name = $item['name'] ?? 'Sans nom';
+            $type = $item['type'] ?? 'page';
+            // Ne vérifier la cible page QUE pour les liens de type 'page'
+            if ($type !== 'page') {
+                continue;
+            }
 
-            if (preg_match('#^/page/([a-zA-Z0-9_-]+)#', $url, $matches)) {
+            $url = $item['url'] ?? ($item['targetRef'] ?? '');
+            $name = $item['name'] ?? ($item['label'] ?? 'Sans nom');
+
+            if (preg_match('#(?:^/page/|^page/|^)([a-zA-Z0-9_\-\.]+)(?:\.html)?$#i', (string)$url, $matches)) {
                 $targetSlug = $matches[1];
-                if (!in_array($targetSlug, $pageSlugs, true)) {
+                if (!empty($targetSlug) && !is_numeric($targetSlug) && !in_array($targetSlug, $pageSlugs, true)) {
                     $this->stats['orphan_menu_items']++;
                     $this->issues['warning'][] = "Lien de menu rompu : '{$name}' pointe vers la page inexistante '{$targetSlug}'";
                 }
@@ -206,7 +251,7 @@ class DataInspector
                     $orphans = array_diff($catItems, $existingPostIds);
                     if (!empty($orphans)) {
                         $this->stats['orphan_category_refs'] += count($orphans);
-                        $this->issues['info'][] = "Catégorie '{$cat['label']}' contient des références à des articles supprimés (IDs: " . implode(', ', $orphans) . ")";
+                        $this->issues['info'][] = "Catégorie '" . ($cat['label'] ?? $cat['name'] ?? 'Inconnue') . "' contient des références à des articles supprimés (IDs: " . implode(', ', $orphans) . ")";
                     }
                 }
             }
@@ -219,34 +264,66 @@ class DataInspector
                 $postId = (int)$matches[1];
                 if (!in_array($postId, $existingPostIds, true)) {
                     $this->stats['orphan_comments']++;
-                    $this->issues['warning'][] = "Fichier de commentaires orphelin détecté : {$cf} (article ID {$postId} inexistant)";
+                    $this->issues['warning'][] = "Fichier de commentaires orphelin détecté : " . basename($cf) . " (article ID {$postId} supprimé)";
                 }
             }
         }
     }
 
     /**
-     * Vérifie la connectivité et la structure SQL si une base de données est configurée.
+     * Comparateur d'intégrité croisée entre Flat-file JSON et Base de données SQL (SQLite / MySQL)
      */
-    private function auditSqlIntegrity(): void
+    private function auditCrossStorageIntegrity(): void
     {
-        $dbConfig = Core::getInstance()->getConfigVal('database') ?? [];
-        if (empty($dbConfig['type'])) {
-            $this->stats['sql_integrity'] = 'flat_file_only';
+        $db = Database::getInstance();
+        $pdo = null;
+        try {
+            $pdo = $db->getPdo('default');
+            $this->stats['sql_integrity'] = 'connected';
+        } catch (\Throwable $e) {
+            $this->stats['sql_integrity'] = 'not_connected';
             return;
         }
 
-        try {
-            $db = Database::getInstance();
-            if ($db && $db->getConnection()) {
-                $this->stats['sql_integrity'] = 'connected_and_valid';
-            } else {
-                $this->stats['sql_integrity'] = 'error';
-                $this->issues['warning'][] = "Base de données SQL configurée mais connexion impossible.";
+        // Modèles agnostiques majeurs à vérifier en miroir
+        $models = [
+            'Pages' => [
+                'jsonFile' => defined('DATA_CORE_PAGE') ? DATA_CORE_PAGE . 'pages.json' : DATA . 'core/page/pages.json',
+                'table' => 'pages'
+            ],
+            'Utilisateurs' => [
+                'jsonFile' => defined('DATA_CORE_AUTH') ? DATA_CORE_AUTH . 'users.json' : DATA . 'core/auth/users.json',
+                'table' => 'users'
+            ]
+        ];
+
+        foreach ($models as $name => $info) {
+            $jsonCount = 0;
+            if (file_exists($info['jsonFile'])) {
+                $jsonData = Util::readJsonFile($info['jsonFile'], true);
+                $jsonCount = is_array($jsonData) ? count($jsonData) : 0;
             }
-        } catch (\Throwable $e) {
-            $this->stats['sql_integrity'] = 'error';
-            $this->issues['warning'][] = "Erreur SQL : " . $e->getMessage();
+
+            // Vérifier si la table SQL existe
+            try {
+                $stmt = $pdo->query("SELECT COUNT(*) FROM `{$info['table']}`");
+                if ($stmt !== false) {
+                    $sqlCount = (int)$stmt->fetchColumn();
+                    $this->stats['cross_storage_diffs'][$name] = [
+                        'json' => $jsonCount,
+                        'sql' => $sqlCount,
+                        'synced' => ($jsonCount === $sqlCount)
+                    ];
+
+                    if ($jsonCount !== $sqlCount) {
+                        $this->stats['cross_storage_synced'] = false;
+                        $this->issues['warning'][] = "Désynchronisation multi-stockage ({$name}) : {$jsonCount} enregistrement(s) en JSON vs {$sqlCount} en base SQL.";
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Table inexistante dans ce schéma SQL, ignorer
+                continue;
+            }
         }
     }
 
@@ -259,7 +336,24 @@ class DataInspector
                 $slugs[] = basename($f, '.json');
             }
         }
-        return $slugs;
+        $pagesFile = defined('DATA_CORE_PAGE') ? DATA_CORE_PAGE . 'pages.json' : DATA . 'core/page/pages.json';
+        if (file_exists($pagesFile)) {
+            $pages = Util::readJsonFile($pagesFile, true) ?: [];
+            if (is_array($pages)) {
+                foreach ($pages as $p) {
+                    if (!empty($p['id'])) {
+                        $slugs[] = (string)$p['id'];
+                    }
+                    if (!empty($p['slug'])) {
+                        $slugs[] = (string)$p['slug'];
+                    }
+                    if (!empty($p['file'])) {
+                        $slugs[] = str_replace('.json', '', (string)$p['file']);
+                    }
+                }
+            }
+        }
+        return array_unique($slugs);
     }
 
     private function repairCategoryOrphans(): int
@@ -295,6 +389,31 @@ class DataInspector
         return $totalRemoved;
     }
 
+    private function repairCommentOrphans(): int
+    {
+        $blogFile = DATA_PLUGIN . 'blog/blog.json';
+        if (!file_exists($blogFile)) {
+            return 0;
+        }
+
+        $posts = Util::readJsonFile($blogFile, true) ?: [];
+        $existingPostIds = array_map(fn($p) => (int)$p['id'], is_array($posts) ? $posts : []);
+
+        $commentFiles = glob(DATA_PLUGIN . 'blog/comments_*.json') ?: [];
+        $deleted = 0;
+        foreach ($commentFiles as $cf) {
+            if (preg_match('/comments_(\d+)\.json$/', $cf, $matches)) {
+                $postId = (int)$matches[1];
+                if (!in_array($postId, $existingPostIds, true)) {
+                    if (@unlink($cf)) {
+                        $deleted++;
+                    }
+                }
+            }
+        }
+        return $deleted;
+    }
+
     private function repairMenuOrphans(): int
     {
         $menuFile = defined('DATA_CORE') ? DATA_CORE . 'menu_items.json' : DATA . 'core/menu_items.json';
@@ -312,10 +431,16 @@ class DataInspector
         $removed = 0;
 
         foreach ($items as $item) {
-            $url = $item['url'] ?? '';
-            if (preg_match('#^/page/([a-zA-Z0-9_-]+)#', $url, $matches)) {
+            $type = $item['type'] ?? 'page';
+            if ($type !== 'page') {
+                $cleaned[] = $item;
+                continue;
+            }
+
+            $url = $item['url'] ?? ($item['targetRef'] ?? '');
+            if (preg_match('#(?:^/page/|^page/|^)([a-zA-Z0-9_\-\.]+)(?:\.html)?$#i', (string)$url, $matches)) {
                 $targetSlug = $matches[1];
-                if (!in_array($targetSlug, $pageSlugs, true)) {
+                if (!empty($targetSlug) && !is_numeric($targetSlug) && !in_array($targetSlug, $pageSlugs, true)) {
                     $removed++;
                     continue; // Supprimer l'élément orphelin
                 }
@@ -328,5 +453,60 @@ class DataInspector
         }
 
         return $removed;
+    }
+
+    private function repairDuplicateIds(): int
+    {
+        $filesToAudit = [
+            DATA_PLUGIN . 'blog/blog.json',
+            defined('DATA_CORE_PAGE') ? DATA_CORE_PAGE . 'pages.json' : DATA . 'core/page/pages.json',
+        ];
+
+        $repairedCount = 0;
+        foreach ($filesToAudit as $file) {
+            if (!file_exists($file)) {
+                continue;
+            }
+            $data = Util::readJsonFile($file, true);
+            if (!is_array($data) || empty($data)) {
+                continue;
+            }
+
+            $seenIds = [];
+            $maxId = 0;
+            $hasDuplicates = false;
+
+            foreach ($data as $item) {
+                if (isset($item['id']) && is_numeric($item['id'])) {
+                    $id = (int)$item['id'];
+                    $maxId = max($maxId, $id);
+                    if (isset($seenIds[$id])) {
+                        $hasDuplicates = true;
+                    }
+                    $seenIds[$id] = true;
+                }
+            }
+
+            if ($hasDuplicates) {
+                $cleaned = [];
+                $allocatedIds = [];
+                foreach ($data as $item) {
+                    if (isset($item['id'])) {
+                        $id = (int)$item['id'];
+                        if (isset($allocatedIds[$id])) {
+                            // Assigner un nouvel ID incrémental
+                            $maxId++;
+                            $item['id'] = $maxId;
+                            $repairedCount++;
+                        }
+                        $allocatedIds[$item['id']] = true;
+                    }
+                    $cleaned[] = $item;
+                }
+                Util::writeJsonFile($file, $cleaned);
+            }
+        }
+
+        return $repairedCount;
     }
 }

@@ -212,6 +212,10 @@ class Util
      */
     public static function writeJsonFile($file, $data)
     {
+        if (class_exists('\Core\Monitor\SystemMonitor', false)) {
+            \Core\Monitor\SystemMonitor::incrementIo('json_write');
+        }
+
         $testMode = \Core\Auth\AdminTestMode::getInstance();
         if ($testMode->isActive()) {
             $testMode->setVolatileJson($file, $data);
@@ -232,6 +236,10 @@ class Util
      */
     public static function readJsonFile($file, $assoc = true)
     {
+        if (class_exists('\Core\Monitor\SystemMonitor', false)) {
+            \Core\Monitor\SystemMonitor::incrementIo('json_read');
+        }
+
         $testMode = \Core\Auth\AdminTestMode::getInstance();
         if ($testMode->isActive()) {
             $volatile = $testMode->getVolatileJson($file);

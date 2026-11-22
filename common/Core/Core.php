@@ -118,6 +118,8 @@ class Core
             define('REQUEST_ID', bin2hex(random_bytes(8)));
         }
 
+        \Core\Monitor\SystemMonitor::init();
+
         $this->config = Util::readJsonFile(DATA . 'config.json', true);
         $this->env = new Env(ROOT . '.env');
         $this->loadEnv();
@@ -744,7 +746,10 @@ class Core
                             $logger = $this->getLogger();
                             // $logger->log(\Core\Logger::LEVEL_DEBUG, "Core::callHook('{$name}') - Exécution du hook #{$idx}: " . (is_string($function) ? $function : gettype($function)));
                         }
+                        $hStart = microtime(true);
                         $return .= call_user_func($function);
+                        $hDuration = (microtime(true) - $hStart) * 1000;
+                        \Core\Monitor\SystemMonitor::recordHook($name, $hDuration, is_string($function) ? $function : (is_array($function) ? (is_object($function[0]) ? get_class($function[0]) : $function[0]) . '::' . $function[1] : 'Closure'));
                     } else {
                         if ($name === 'before404' || $name === 'endFrontBody') {
                             $logger = $this->getLogger();
@@ -801,11 +806,14 @@ class Core
                         $function = '\\' . ltrim($function, '\\');
                     }
                     if (is_callable($function)) {
+                        $hStart = microtime(true);
                         if (is_array($params) && count($params) === 1 && isset($params[0])) {
                             $result = call_user_func($function, $params[0]);
                         } else {
                             $result = call_user_func($function, $params);
                         }
+                        $hDuration = (microtime(true) - $hStart) * 1000;
+                        \Core\Monitor\SystemMonitor::recordHook($name, $hDuration, is_string($function) ? $function : (is_array($function) ? (is_object($function[0]) ? get_class($function[0]) : $function[0]) . '::' . $function[1] : 'Closure'));
                         if (is_string($result)) {
                             $return .= $result;
                         }
@@ -822,6 +830,7 @@ class Core
                     $function = '\\' . ltrim($function, '\\');
                 }
                 if (is_callable($function)) {
+                    $hStart = microtime(true);
                     // Pour navigation:build, on passe toujours l'arbre original à chaque hook
                     // Les hooks de navigation ne retournent rien (void), donc on ne modifie pas $params
                     if ($name === 'navigation:build' && is_array($originalParams) && count($originalParams) === 1) {
@@ -831,8 +840,10 @@ class Core
                     } else {
                         $params = call_user_func($function, $params);
                     }
+                    $hDuration = (microtime(true) - $hStart) * 1000;
+                    \Core\Monitor\SystemMonitor::recordHook($name, $hDuration, is_string($function) ? $function : (is_array($function) ? (is_object($function[0]) ? get_class($function[0]) : $function[0]) . '::' . $function[1] : 'Closure'));
                 }
-        }
+            }
         return $params;
     }
 
@@ -1523,6 +1534,12 @@ class Core
     public function addQueryCounter()
     {
         $this->queryCount++;
+        \Core\Monitor\SystemMonitor::incrementIo('sql_query');
+    }
+
+    public function systemMonitor(): \Core\Monitor\SystemMonitor
+    {
+        return \Core\Monitor\SystemMonitor::getInstance();
     }
 
     public function logGenerationTime()

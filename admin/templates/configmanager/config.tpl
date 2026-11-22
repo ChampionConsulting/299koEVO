@@ -326,6 +326,15 @@
           </a>
           <br><small>{{Lang.configmanager-report-desc-short}}</small>
         </p>
+        <div style="margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--cb-border, #e2e8f0); border-radius: 8px; background: var(--cb-card-bg, #f8fafc);">
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 1.05rem;"><i class="fa-solid fa-chart-line" style="color: #6366f1;"></i> Monitoring Technique Souverain</h4>
+          <p style="margin: 0 0 1rem 0; font-size: 0.88rem; color: var(--cb-text-muted, #64748b);">
+            Supervisez en direct la latence, la mémoire vive, le chronométrage unitaire des Hooks et le volume d'opérations d'I/O en local.
+          </p>
+          <a href="{ ROUTER.generate('monitor-admin') }" class="button primary" style="display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-gauge-high"></i> Ouvrir le Dashboard de Monitoring
+          </a>
+        </div>
       </li>
       <li class="tab">
           <p>
