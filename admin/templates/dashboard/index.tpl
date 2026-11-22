@@ -127,7 +127,7 @@
                                         <i class="fa-regular fa-file-code"></i>
                                         <span class="adm-page-title">{{p.name}}</span>
                                         {% if p.isHome %}
-                                            <span class="adm-badge adm-badge-gold">Accueil</span>
+                                            <span class="adm-badge adm-badge-gold"><i class="fa-solid fa-house"></i> Page d'accueil</span>
                                         {% endif %}
                                     </div>
                                 </td>

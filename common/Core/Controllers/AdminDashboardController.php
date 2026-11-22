@@ -235,14 +235,22 @@ class AdminDashboardController extends AdminController
             $lines = file($todayLogFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             if (is_array($lines)) {
                 $todayPageviews = count($lines);
-                $ips = [];
+                $humanIps = [];
+                $allIps = [];
                 foreach ($lines as $line) {
                     $row = json_decode($line, true);
-                    if (!empty($row['ip_hash'])) {
-                        $ips[$row['ip_hash']] = true;
+                    if (!is_array($row)) {
+                        continue;
+                    }
+                    $hash = $row['ipHash'] ?? ($row['ip_hash'] ?? null);
+                    if ($hash) {
+                        $allIps[$hash] = true;
+                        if (empty($row['isBot']) && empty($row['isAdmin'])) {
+                            $humanIps[$hash] = true;
+                        }
                     }
                 }
-                $todayVisits = count($ips);
+                $todayVisits = !empty($humanIps) ? count($humanIps) : count($allIps);
             }
         }
         return [
@@ -324,13 +332,28 @@ class AdminDashboardController extends AdminController
                       AND EXISTS (SELECT 1 FROM vb_livechat_messages m WHERE m.conversation_id = c.id AND m.sender = 'visitor')
                 ")->fetchColumn();
                 $unreadCount = (int)$pdo->query("SELECT COALESCE(SUM(unread_admin), 0) FROM vb_livechat_conversations")->fetchColumn();
+
+                if ($unreadCount > 0) {
+                    $livechatVal = "{$unreadCount} non lu(s)";
+                    $livechatSub = "Message(s) en attente";
+                    $livechatAccent = 'warn';
+                } elseif ($openCount > 0) {
+                    $livechatVal = (string)$openCount;
+                    $livechatSub = "{$openCount} conversation(s) active(s)";
+                    $livechatAccent = 'blue';
+                } else {
+                    $livechatVal = "0";
+                    $livechatSub = "Aucune conversation active";
+                    $livechatAccent = 'blue';
+                }
+
                 $cards[] = [
                     'title'  => 'LiveChat Direct',
-                    'value'  => $unreadCount > 0 ? "{$unreadCount} non lu(s)" : "{$openCount} active(s)",
-                    'sub'    => "{$openCount} conversation(s) active(s)",
+                    'value'  => $livechatVal,
+                    'sub'    => $livechatSub,
                     'icon'   => 'fa-solid fa-comments',
                     'url'    => '/admin/livechat',
-                    'accent' => $unreadCount > 0 ? 'warn' : 'blue',
+                    'accent' => $livechatAccent,
                 ];
             } catch (\Throwable $e) {
             }
@@ -351,9 +374,25 @@ class AdminDashboardController extends AdminController
             }
         }
 
-        if (PluginsManager::isActivePlugin('blog') && $pdo) {
+        if (PluginsManager::isActivePlugin('blog')) {
             try {
-                $postsCount = (int)$pdo->query('SELECT COUNT(*) FROM blog_posts')->fetchColumn();
+                $postsCount = 0;
+                if ($pdo) {
+                    try {
+                        $postsCount = (int)$pdo->query('SELECT COUNT(*) FROM blog_posts')->fetchColumn();
+                    } catch (\Throwable $e) {
+                        $postsCount = 0;
+                    }
+                }
+                if ($postsCount === 0) {
+                    $blogFile = DATA . 'plugin/blog/blog.json';
+                    if (file_exists($blogFile)) {
+                        $raw = json_decode(file_get_contents($blogFile), true);
+                        if (is_array($raw)) {
+                            $postsCount = count($raw);
+                        }
+                    }
+                }
                 $cards[] = [
                     'title'  => 'Articles de Blog',
                     'value'  => (string)$postsCount,
@@ -362,6 +401,23 @@ class AdminDashboardController extends AdminController
                     'url'    => '/admin/blog',
                     'accent' => 'green',
                 ];
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if ((PluginsManager::isActivePlugin('PoiManager') || PluginsManager::isActivePlugin('SearchMaps')) && $pdo) {
+            try {
+                $poiCount = (int)$pdo->query('SELECT COUNT(*) FROM poi')->fetchColumn();
+                if ($poiCount > 0) {
+                    $cards[] = [
+                        'title'  => 'Annuaire & POIs',
+                        'value'  => number_format($poiCount, 0, ',', ' '),
+                        'sub'    => 'Commerces & Lieux référencés',
+                        'icon'   => 'fa-solid fa-map-location-dot',
+                        'url'    => '/admin/poimanager',
+                        'accent' => 'amber',
+                    ];
+                }
             } catch (\Throwable $e) {
             }
         }
