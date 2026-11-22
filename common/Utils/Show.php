@@ -516,6 +516,7 @@ class Show
             'configmanager' => 'systeme',
             'storage'       => 'systeme',
             'monitor'       => 'systeme',
+            'workflows'     => 'systeme',
             'backups'       => 'systeme',
             'pluginsmanager'=> 'systeme',
             'marketplace'   => 'systeme',

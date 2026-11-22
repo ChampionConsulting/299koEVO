@@ -53,6 +53,11 @@ class SettingsService
             'label' => 'configmanager-monitor-nav-title',
             'icon' => 'fa-solid fa-chart-line',
         ],
+        [
+            'name' => 'workflows',
+            'label' => 'configmanager-workflows-nav-title',
+            'icon' => 'fa-solid fa-network-wired',
+        ],
     ];
 
     public function __construct()
@@ -408,6 +413,16 @@ class SettingsService
         $router->map('GET', '/admin/monitor[/?]', 'Core\Monitor\Controllers\SystemMonitorAdminController#home', 'monitor-admin');
         $router->map('POST', '/admin/monitor/reset', 'Core\Monitor\Controllers\SystemMonitorAdminController#reset', 'monitor-admin-reset');
         $router->map('GET', '/admin/api/monitor/metrics', 'Core\Monitor\Controllers\SystemMonitorAdminController#apiMetrics', 'monitor-admin-api');
+
+        // Sovereign Workflow Automation Engine (No-Code)
+        $router->map('GET', '/admin/workflows[/?]', 'Core\Workflow\Controllers\WorkflowAdminController#home', 'workflow-admin');
+        $router->map('GET', '/admin/workflows/create[/?]', 'Core\Workflow\Controllers\WorkflowAdminController#edit', 'workflow-admin-create');
+        $router->map('GET', '/admin/workflows/edit/[a:id]', 'Core\Workflow\Controllers\WorkflowAdminController#edit', 'workflow-admin-edit');
+        $router->map('POST', '/admin/workflows/save', 'Core\Workflow\Controllers\WorkflowAdminController#save', 'workflow-admin-save');
+        $router->map('POST', '/admin/workflows/delete/[a:id]', 'Core\Workflow\Controllers\WorkflowAdminController#delete', 'workflow-admin-delete');
+        $router->map('POST', '/admin/workflows/toggle/[a:id]', 'Core\Workflow\Controllers\WorkflowAdminController#toggle', 'workflow-admin-toggle');
+        $router->map('POST', '/admin/workflows/test[/?]', 'Core\Workflow\Controllers\WorkflowAdminController#test', 'workflow-admin-test');
+        $router->map('POST', '/admin/workflows/clear-history', 'Core\Workflow\Controllers\WorkflowAdminController#clearHistory', 'workflow-admin-clear-history');
     }
 
     public function registerHooks(): void
@@ -429,6 +444,7 @@ class SettingsService
             if ($this->isCurrentModule()) {
                 echo '<a title="' . Lang::get('configmanager-backup') . '" id="configmanager-backup" href="' . Router::getInstance()->generate('configmanager-backup') . '"><i class="fa-solid fa-box-archive"></i></a>';
                 echo '<a title="Monitoring Système" id="configmanager-monitor" href="' . Router::getInstance()->generate('monitor-admin') . '"><i class="fa-solid fa-chart-line"></i></a>';
+                echo '<a title="Workflows & Automatisation" id="configmanager-workflows" href="' . Router::getInstance()->generate('workflow-admin') . '"><i class="fa-solid fa-network-wired"></i></a>';
             }
         });
     }

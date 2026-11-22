@@ -119,6 +119,7 @@ class Core
         }
 
         \Core\Monitor\SystemMonitor::init();
+        \Core\Workflow\WorkflowManager::bootstrap();
 
         $this->config = Util::readJsonFile(DATA . 'config.json', true);
         $this->env = new Env(ROOT . '.env');
@@ -480,6 +481,11 @@ class Core
     public function dataInspector(): \Core\Data\DataInspector
     {
         return \Core\Data\DataInspector::getInstance();
+    }
+
+    public function workflow(): \Core\Workflow\WorkflowManager
+    {
+        return \Core\Workflow\WorkflowManager::getInstance();
     }
 
     /**

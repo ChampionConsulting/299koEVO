@@ -78,7 +78,7 @@ flowchart TD
 - [ ] **`MediaManager`** : Médiathèque transversale avec détection des fichiers inutilisés, conversion WebP et gestion des droits.
 
 #### Outils Développeurs & Automatisation
-- [ ] **`Workflow`** : Orchestrateur d'événements sans code (ex: *Article publié -> Notification Push -> RSS -> Post SocialFeed*).
+- [x] **`Workflow`** : Orchestrateur d'événements sans code (triggers, conditions logiques, actions Webhooks HTTP, e-mails, logs et exécution asynchrone différée via `TaskScheduler`).
 - [ ] **`TranslationManager`** : Interface visuelle de comparaison multilingue avec détection des chaînes manquantes.
 - [ ] **`PluginSandbox`** : Environnement de test éphémère pour exécuter un plugin sans impacter le site réel.
 
@@ -114,6 +114,6 @@ flowchart TD
 - [x] **`SystemMonitor`**: Sovereign real-time telemetry dashboard (`/admin/monitor`): latency in ms, peak PHP RAM, unit hook profiler, and JSON/SQL I/O counter with live Fetch auto-refresh.
 - [x] **`BackupManager` & `SiteExporter`**: 1-click snapshot export and seamless migration between servers.
 - **`MediaManager`**: Centralized asset library with orphan detection and WebP processing.
-- **`Workflow`**: Inter-plugin event orchestrator.
+- [x] **`Workflow`**: Sovereign no-code event orchestrator (triggers, conditions, HTTP webhooks, emails, and TaskScheduler async jobs).
 - **`TranslationManager`**: Graphical dictionary diff and missing keys detector.
 - **`Blog` (Advanced Editorial Scheduling & Timestamps)**: Distinct creation date (`created_at`), scheduled publication date (`published_at`), and revision date (`updated_at`) with full hour/minute precision (`Y-m-d H:i:s`), plus conditional "Updated on..." display.
