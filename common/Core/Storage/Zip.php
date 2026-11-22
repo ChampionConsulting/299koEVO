@@ -66,4 +66,40 @@ class Zip
         $zip->close();
         return true;
     }
+
+    public function extractTo(string $targetDir): bool
+    {
+        if (!class_exists('\ZipArchive') || !file_exists($this->filename)) {
+            return false;
+        }
+        $zip = new \ZipArchive();
+        if ($zip->open($this->filename) !== true) {
+            return false;
+        }
+        $targetDir = rtrim($targetDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $filename = $zip->getNameIndex($i);
+            // Sécurité anti-path traversal
+            if (str_contains($filename, '..') || str_starts_with($filename, '/') || str_starts_with($filename, '\\')) {
+                continue;
+            }
+            $targetPath = $targetDir . $filename;
+            if (str_ends_with($filename, '/')) {
+                if (!is_dir($targetPath)) {
+                    @mkdir($targetPath, 0755, true);
+                }
+            } else {
+                $dir = dirname($targetPath);
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0755, true);
+                }
+                $content = $zip->getFromIndex($i);
+                if ($content !== false) {
+                    file_put_contents($targetPath, $content);
+                }
+            }
+        }
+        $zip->close();
+        return true;
+    }
 }

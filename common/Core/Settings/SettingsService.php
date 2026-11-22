@@ -43,6 +43,11 @@ class SettingsService
             'label' => 'storage.name',
             'icon' => 'fa-solid fa-database',
         ],
+        [
+            'name' => 'backups',
+            'label' => 'configmanager-backup-nav-title',
+            'icon' => 'fa-solid fa-box-archive',
+        ],
     ];
 
     public function __construct()
@@ -334,6 +339,34 @@ class SettingsService
         return $this->settingsDir;
     }
 
+    /**
+     * Create an automated pre-update safety snapshot.
+     */
+    public static function createAutoSnapshot(string $scope = 'all', string $context = 'pre-update'): ?string
+    {
+        $backupDir = DATA_CORE_SETTINGS;
+        if (!is_dir($backupDir)) {
+            @mkdir($backupDir, 0755, true);
+        }
+
+        $filename = $backupDir . 'backup-' . $context . '-' . date('Y-m-d-H-i-s') . '.zip';
+        $ignore = [
+            '/.*backup-.*\.zip/i',
+            '/.*\.git.*/i',
+            '/.*\.cache.*/i',
+        ];
+
+        $targetFolder = ROOT;
+        if ($scope === 'data') {
+            $targetFolder = DATA;
+        } elseif ($scope === 'code') {
+            $ignore[] = '/^data\/.*/i';
+        }
+
+        $result = \Core\Storage\Zip::createZipFromFolder($targetFolder, $filename, $ignore);
+        return $result ? $filename : null;
+    }
+
     public function registerRoutes(Router $router): void
     {
         if (self::$routesRegistered) {
@@ -347,9 +380,12 @@ class SettingsService
         $router->map('GET', '/admin/configmanager/update/[a:token]', 'Core\Settings\Controllers\ConfigManagerUpdateController#process', 'configmanager-update');
         $router->map('GET', '/admin/configmanager/update-manual/[a:token]', 'Core\Settings\Controllers\ConfigManagerUpdateController#processManual', 'configmanager-manual-update');
         $router->map('GET', '/admin/configmanager/check-update/[a:token]', 'Core\Settings\Controllers\ConfigManagerUpdateController#checkNow', 'configmanager-check-update');
+        $router->map('GET', '/admin/api/check-updates', 'Core\Settings\Controllers\ConfigManagerUpdateController#checkUpdatesAsync', 'configmanager-api-check-updates');
         $router->map('GET', '/admin/configmanager/delete-install/[a:token]', 'Core\Settings\Controllers\ConfigManagerAdminController#deleteInstall', 'configmanager-delete-install');
-        $router->map('GET', '/admin/configmanager/backup', 'Core\Settings\Controllers\ConfigManagerBackupAdminController#home', 'configmanager-backup');
+        $router->map('GET', '/admin/configmanager/backup[/?]', 'Core\Settings\Controllers\ConfigManagerBackupAdminController#home', 'configmanager-backup');
+        $router->map('GET', '/admin/backups[/?]', 'Core\Settings\Controllers\ConfigManagerBackupAdminController#home', 'configmanager-backups-alias');
         $router->map('GET', '/admin/configmanager/create-backup/[a:token]', 'Core\Settings\Controllers\ConfigManagerBackupAdminController#create', 'configmanager-create-backup');
+        $router->map('GET|POST', '/admin/configmanager/restore-backup/[a:token]', 'Core\Settings\Controllers\ConfigManagerBackupAdminController#restore', 'configmanager-restore-backup');
         $router->map('GET', '/admin/configmanager/dl-backup/[a:token]/[i:timestamp]', 'Core\Settings\Controllers\ConfigManagerBackupAdminController#download', 'configmanager-dl-backup');
         $router->map('POST', '/admin/configmanager/delete-backup', 'Core\Settings\Controllers\ConfigManagerBackupAdminController#delete', 'configmanager-delete-backup');
         $router->map('GET', '/admin/configmanager/report[/?]', 'Core\Settings\Controllers\ConfigManagerAdminController#report', 'configmanager-report');
@@ -378,7 +414,6 @@ class SettingsService
         });
         $core->addHook('adminHead', function () {
             $this->displayPostInstallWarningOnce();
-            $this->checkNewVersion();
         });
         $core->addHook('adminToolsTemplates', function () {
             if ($this->isCurrentModule()) {

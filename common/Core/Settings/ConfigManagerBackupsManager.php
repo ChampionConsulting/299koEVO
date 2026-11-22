@@ -9,28 +9,30 @@ defined('ROOT') or exit('Access denied!');
 
 class ConfigManagerBackupsManager
 {
+    /**
+     * @return ConfigManagerBackup[]
+     */
     public static function getAll(): array
     {
         $backups = [];
-        $backupFiles = [];
         $directory = DATA_CORE_SETTINGS;
         if (!is_dir($directory)) {
             return [];
         }
         $files = scandir($directory);
         foreach ($files as $file) {
-            if (preg_match('/backup-.*\.zip/i', $file)) {
-                $backupFiles[] = $file;
+            if (preg_match('/backup-.*\.zip$/i', $file)) {
+                try {
+                    $obj = new ConfigManagerBackup($file);
+                    // Clé unique pour éviter toute collision sur la même seconde
+                    $key = $obj->timestamp . '_' . $file;
+                    $backups[$key] = $obj;
+                } catch (\Throwable $e) {
+                    continue;
+                }
             }
         }
-        foreach ($backupFiles as $file) {
-            $obj = new ConfigManagerBackup($file);
-            $timestamp = Util::getTimestampFromDate($obj->date);
-            $backups[$timestamp] = $obj;
-        }
-        krsort($backups, SORT_NUMERIC);
+        krsort($backups, SORT_NATURAL);
         return $backups;
     }
 }
-
-

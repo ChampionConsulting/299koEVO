@@ -48,6 +48,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     initAdminTopNav();
     initAdminCsrfInjection();
+    initAdminAsyncUpdateCheck();
 
     document.querySelectorAll(".list-item-list li i").forEach(function (item) {
         item.addEventListener('click', function () {
@@ -282,3 +283,37 @@ var getNextSibling = function (elem, selector) {
         sibling = sibling.nextElementSibling
     }
 };
+
+function initAdminAsyncUpdateCheck() {
+    // Vérification asynchrone des mises à jour sans ralentir le chargement initial (0ms)
+    setTimeout(function () {
+        fetch('admin/api/check-updates', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            if (!data || !data.hasUpdate || !data.badgeHtml) return;
+
+            const targetContainer = document.querySelector('.adm-topbar-right');
+            if (!targetContainer) return;
+
+            const existingBadge = targetContainer.querySelector('.adm-update-badge');
+            if (existingBadge) {
+                if (existingBadge.outerHTML !== data.badgeHtml) {
+                    existingBadge.outerHTML = data.badgeHtml;
+                }
+            } else {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.badgeHtml;
+                const newBadge = tempDiv.firstElementChild;
+                if (newBadge) {
+                    newBadge.style.opacity = '0';
+                    newBadge.style.transition = 'opacity 0.4s ease';
+                    targetContainer.insertBefore(newBadge, targetContainer.firstChild);
+                    setTimeout(function () { newBadge.style.opacity = '1'; }, 20);
+                }
+            }
+        })
+        .catch(function () {});
+    }, 800);
+}

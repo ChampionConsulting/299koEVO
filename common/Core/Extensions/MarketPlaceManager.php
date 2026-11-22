@@ -245,6 +245,17 @@ class MarketPlaceManager
             $targetSlug = $existingDirName ?? $safeSlug;
             $pluginDir = $targetDir . $targetSlug . DS;
 
+            // Snapshot automatique pré-mise à jour si la ressource est déjà installée
+            if ($ressource->isInstalled && is_dir($pluginDir)) {
+                $backupDir = DATA_CORE_SETTINGS;
+                if (!is_dir($backupDir)) {
+                    @mkdir($backupDir, 0755, true);
+                }
+                $snapName = $backupDir . 'backup-pre-update-' . $ressource->type . '-' . $safeSlug . '-v' . ($ressource->version ?: 'current') . '-' . date('Y-m-d-H-i-s') . '.zip';
+                \Core\Storage\Zip::createZipFromFolder($pluginDir, $snapName);
+                $this->logger->info("Pre-update snapshot created for {$ressource->slug} at {$snapName}");
+            }
+
             // Si un dossier avec une casse différente résiduelle existe, le nettoyer
             if ($existingDirName !== null && $existingDirName !== $safeSlug && is_dir($targetDir . $safeSlug)) {
                 $this->removeDirectoryRecursive($targetDir . $safeSlug);

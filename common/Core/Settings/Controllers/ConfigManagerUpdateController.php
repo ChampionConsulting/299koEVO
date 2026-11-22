@@ -32,6 +32,10 @@ class ConfigManagerUpdateController extends AdminController {
         if ($nextVersion && $evaluator->isAdmin($ctx)) {
             $isPatch = $updaterManager->isSecurityPatch();
             $label = $isPatch ? ('patch ' . substr((string) $nextVersion, 0, 7)) : ('v' . $nextVersion);
+            
+            // Snapshot automatique pré-mise à jour Core
+            \Core\Settings\SettingsService::createAutoSnapshot('all', 'pre-update-core-' . ($isPatch ? 'patch' : ('v' . $nextVersion)));
+
             if ($updaterManager->update()) {
                 $this->logger->info('Config update applied to ' . $label . ' by ' . $actor);
                 show::msg($isPatch ? "Le correctif de sécurité {$label} a été appliqué avec succès." : Lang::get('configmanager-updated', $nextVersion), 'success');
@@ -104,6 +108,70 @@ class ConfigManagerUpdateController extends AdminController {
             Show::msg('Votre CMS est à jour' . ($current !== '' ? ' (version ' . htmlspecialchars($current . $commitSuffix, ENT_QUOTES, 'UTF-8') . ')' : '') . '.', 'success');
         }
         $this->core->redirect($this->router->generate('configmanager-admin'));
+    }
+
+    public function checkUpdatesAsync(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
+        $ctx = new \Core\Navigation\ConditionContext($this->user);
+        if (!$evaluator->isAdmin($ctx)) {
+            echo json_encode(['hasUpdate' => false, 'error' => 'unauthorized']);
+            exit;
+        }
+
+        $settings = \Core\Core::getInstance()->settings();
+        $cacheFile = $settings->cacheFile();
+        $cachedInfos = \Utils\Util::readJsonFile($cacheFile);
+        if (!is_array($cachedInfos)) {
+            $cachedInfos = [];
+        }
+        $lastCheck = (int)($cachedInfos['lastCheckUpdate'] ?? 0);
+
+        // Si le cache a plus de 60 secondes, on interroge le Hub (mode nightly / patch rapide)
+        if (time() - $lastCheck > 60) {
+            $nextVersion = $settings->getNewVersion();
+            $cachedInfos = \Utils\Util::readJsonFile($cacheFile);
+        } else {
+            $nextVersion = $cachedInfos['nextVersion'] ?? false;
+        }
+
+        if (!$nextVersion) {
+            echo json_encode(['hasUpdate' => false]);
+            exit;
+        }
+
+        $isPatch = !empty($cachedInfos['isPatch']) || (bool) preg_match('/^[a-f0-9]{7,40}$/i', (string) $nextVersion);
+        $token = $this->user->token ?? '';
+        $updateUrl = $this->router->generate('configmanager-update', ['token' => $token]);
+
+        if ($isPatch) {
+            $shortCommit = substr((string) $nextVersion, 0, 7);
+            $label = 'Correctif ' . $shortCommit;
+            $title = 'Un correctif CMS est disponible (' . $shortCommit . '). Cliquez pour l\'appliquer.';
+            $icon = 'fa-shield-halved';
+            $cssClass = 'adm-install-badge adm-update-badge is-patch';
+        } else {
+            $label = 'Màj v' . $nextVersion;
+            $title = 'Une nouvelle version ' . $nextVersion . ' est disponible. Cliquez pour mettre à jour.';
+            $icon = 'fa-cloud-arrow-down';
+            $cssClass = 'adm-install-badge adm-update-badge is-update';
+        }
+
+        $badgeHtml = '<a class="' . $cssClass . '" href="' . htmlspecialchars($updateUrl, ENT_QUOTES, 'UTF-8') . '" title="' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '">'
+            . '<i class="fa-solid ' . $icon . '" aria-hidden="true"></i>'
+            . '<span>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>'
+            . '</a>';
+
+        echo json_encode([
+            'hasUpdate' => true,
+            'nextVersion' => (string) $nextVersion,
+            'isPatch' => $isPatch,
+            'label' => $label,
+            'updateUrl' => $updateUrl,
+            'badgeHtml' => $badgeHtml
+        ]);
+        exit;
     }
 
 }
