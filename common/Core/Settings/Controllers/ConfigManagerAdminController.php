@@ -43,9 +43,21 @@ class ConfigManagerAdminController extends AdminController {
         $settingsService = \Core\Core::getInstance()->settings();
         $cachedUpdate = \Utils\Util::readJsonFile($settingsService->cacheFile());
         $nextCoreVersion = $cachedUpdate['nextVersion'] ?? false;
-        $tpl->set('hasCoreUpdate', (bool) $nextCoreVersion);
+        $currentVersion = defined('VERSION') ? VERSION : '';
+        $isCorePatch = !empty($cachedUpdate['isPatch']) || (bool) preg_match('/^[a-f0-9]{7,40}$/i', (string) $nextCoreVersion);
+        
+        $hasCoreUpdate = false;
+        if (!empty($nextCoreVersion)) {
+            if ($isCorePatch) {
+                $hasCoreUpdate = ($localCommit === null || strtolower(substr($localCommit, 0, 7)) !== strtolower(substr((string) $nextCoreVersion, 0, 7)));
+            } else {
+                $hasCoreUpdate = version_compare((string) $nextCoreVersion, $currentVersion, '>');
+            }
+        }
+
+        $tpl->set('hasCoreUpdate', $hasCoreUpdate);
         $tpl->set('nextCoreVersion', (string) $nextCoreVersion);
-        $tpl->set('isCorePatch', !empty($cachedUpdate['isPatch']) || (bool) preg_match('/^[a-f0-9]{7,40}$/i', (string) $nextCoreVersion));
+        $tpl->set('isCorePatch', $isCorePatch);
         $tpl->set('coreUpdateUrl', $this->router->generate('configmanager-update', ['token' => $this->user->token]));
 
         // Get cache statistics
