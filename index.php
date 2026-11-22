@@ -119,7 +119,11 @@ if (isset($_SERVER['REQUEST_URI']) && in_array($_SERVER['REQUEST_METHOD'] ?? 'GE
         if ($cleanPath === '') {
             $cleanPath = '/';
         }
-        if ($cleanPath !== $basePath && ($cleanPath !== $path || $normalizedPath !== $path)) {
+        // Exclure les dossiers physiques de la suppression du trailing slash pour éviter les boucles infinies avec Apache mod_dir (DirectorySlash)
+        $relPath = ltrim(substr($cleanPath, strlen($basePath)), '/');
+        $isPhysicalDir = ($relPath !== '' && is_dir(ROOT . $relPath));
+
+        if (!$isPhysicalDir && $cleanPath !== $basePath && ($cleanPath !== $path || $normalizedPath !== $path)) {
             $query = parse_url($rawUri, PHP_URL_QUERY);
             $redirectUrl = $cleanPath . ($query !== null && $query !== '' ? '?' . $query : '');
             header("HTTP/1.1 301 Moved Permanently");
