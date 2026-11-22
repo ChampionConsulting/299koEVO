@@ -21,12 +21,8 @@ class ConfigManagerUpdateController extends AdminController {
 
     public function process($token) {
         $actor = $this->user->email ?? 'unknown';
-        $updaterManager = new UpdaterManager();
-        if ($updaterManager->isReady) {
-            $nextVersion = $updaterManager->getNextVersion();
-        } else {
-            $nextVersion = false;
-        }
+        $updaterManager = new UpdaterManager(true);
+        $nextVersion = $updaterManager->getNextVersion();
         $evaluator = \Core\Navigation\AccessPolicyEvaluator::getInstance();
         $ctx = new \Core\Navigation\ConditionContext($this->user);
         if ($nextVersion && $evaluator->isAdmin($ctx)) {

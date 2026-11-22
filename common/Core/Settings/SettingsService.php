@@ -321,8 +321,8 @@ class SettingsService
 
     public function getNewVersion()
     {
-        $updaterManager = new UpdaterManager();
-        $nextVersion = $updaterManager->isReady ? $updaterManager->getNextVersion() : false;
+        $updaterManager = new UpdaterManager(true);
+        $nextVersion = $updaterManager->getNextVersion();
         $cachedInfos = Util::readJsonFile($this->cacheFile);
         if (!is_array($cachedInfos)) {
             $cachedInfos = [];
