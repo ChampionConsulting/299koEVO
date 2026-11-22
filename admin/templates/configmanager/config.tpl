@@ -22,6 +22,10 @@
         Storage
       </li>
       <li>
+        <i class="fa-solid fa-box-archive"></i>
+        Sauvegardes & Sécurité
+      </li>
+      <li>
         <i class="fa-solid fa-chart-line"></i>
         {{Lang.configmanager-telemetry-settings}}
       </li>
@@ -250,6 +254,27 @@
               <strong>Erreur de connexion détectée</strong>: <code>{{dbError}}</code>
           </div>
           {% endif %}
+      </li>
+      <li class="tab">
+          <p>
+              <strong>Sauvegardes du Système & Points de Restauration (Safety Rollback)</strong>
+              <br><small>Générez un instantané de votre site (complet, données seules ou code) et restaurez en 1 clic un état antérieur fonctionnel en cas d'incident.</small>
+          </p>
+          <div class="cfg-storage-cta" style="display:flex;gap:10px;flex-wrap:wrap;margin:1rem 0;">
+              <a href="{ ROUTER.generate('configmanager-backup') }" class="button primary">
+                  <i class="fa-solid fa-box-archive"></i> Gérer les Sauvegardes & Restauration
+              </a>
+              <a href="{ ROUTER.generate('configmanager-create-backup', ['token': SHOW.token, 'scope': 'all']) }" class="button success">
+                  <i class="fa-solid fa-camera"></i> Snapshot Instantané (Complet)
+              </a>
+              <a href="{ ROUTER.generate('configmanager-create-backup', ['token': SHOW.token, 'scope': 'data']) }" class="button">
+                  <i class="fa-solid fa-database"></i> Sauvegarder Contenus (data/)
+              </a>
+          </div>
+          <div class="msg info" style="font-size:0.9rem;">
+              <i class="fa-solid fa-shield-halved"></i>
+              <strong>Safety Rollback automatique</strong> : À chaque mise à jour du Core CMS ou d'une extension depuis la Marketplace, un snapshot de sécurité est automatiquement créé pour vous permettre de restaurer la version précédente en 1 clic.
+          </div>
       </li>
       <li class="tab">
         <p>

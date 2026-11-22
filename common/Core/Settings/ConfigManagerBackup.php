@@ -50,6 +50,13 @@ class ConfigManagerBackup extends Zip
 
     public function getTypeLabel(): string
     {
+        if (preg_match('/^pre-update-(plugin|theme)-([a-zA-Z0-9_-]+)/', $this->type, $m)) {
+            $kind = $m[1] === 'plugin' ? 'Plugin' : 'Thème';
+            return "Safety Rollback {$kind} ({$m[2]})";
+        }
+        if (str_starts_with($this->type, 'pre-update-core')) {
+            return 'Safety Rollback Core CMS';
+        }
         return match ($this->type) {
             'data' => 'Données uniquement (data/)',
             'code' => 'Code CMS uniquement',
@@ -60,7 +67,27 @@ class ConfigManagerBackup extends Zip
 
     public function restore(): bool
     {
-        $extracted = $this->extractTo(ROOT);
+        $targetDir = ROOT;
+        if (preg_match('/^pre-update-(plugin|theme)-([a-zA-Z0-9_-]+)/', $this->type, $m)) {
+            $extType = $m[1];
+            $extSlug = $m[2];
+            $baseDir = ($extType === 'plugin') ? PLUGINS : THEMES;
+            
+            // Vérifier la structure interne du ZIP
+            $zip = new \ZipArchive();
+            if ($zip->open($this->filename) === true) {
+                $first = $zip->getNameIndex(0);
+                $zip->close();
+                if ($first !== false && !str_starts_with($first, 'plugin/') && !str_starts_with($first, 'theme/')) {
+                    $targetDir = rtrim($baseDir, '/\\') . DIRECTORY_SEPARATOR . $extSlug;
+                    if (!is_dir($targetDir)) {
+                        @mkdir($targetDir, 0755, true);
+                    }
+                }
+            }
+        }
+
+        $extracted = $this->extractTo($targetDir);
         if ($extracted) {
             if (class_exists(CacheManager::class)) {
                 $cm = new CacheManager();

@@ -238,7 +238,39 @@ class MarketPlaceRessource
             return false;
         }
 
+        // En environnement de développement local (domaine .test / .local ou branche develop active),
+        // le code local prime : on évite les faux avis de mise à jour pendant les sessions de dev
+        if (self::isLocalDevEnvironment()) {
+            if ($localHash !== '' && (is_dir(DATA_CORE_EXTENSIONS) || @mkdir(DATA_CORE_EXTENSIONS, 0755, true))) {
+                $hashes[$key] = $localHash;
+                Util::writeJsonFile($hashFile, $hashes);
+            }
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * Détermine si l'instance tourne dans un environnement de développement local
+     */
+    public static function isLocalDevEnvironment(): bool
+    {
+        if (defined('DEV_MODE') && DEV_MODE) {
+            return true;
+        }
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        if (str_ends_with($host, '.test') || str_ends_with($host, '.local') || $host === 'localhost' || str_starts_with($host, '127.0.0.1')) {
+            return true;
+        }
+        $gitHead = ROOT . '.git' . DIRECTORY_SEPARATOR . 'HEAD';
+        if (is_file($gitHead)) {
+            $headContent = trim((string) @file_get_contents($gitHead));
+            if (str_contains($headContent, 'develop') || str_contains($headContent, 'feature/')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function isSecurityPatch(): bool

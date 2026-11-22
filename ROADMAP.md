@@ -45,22 +45,22 @@ flowchart TD
 ### 🚀 3. Les Trois Chantiers Prioritaires
 
 #### 1. `PluginInspector & Pipeline Communautaire` (Priorité Haute) — Sécurité, Audit & Soumission d'Extensions
-- [ ] **Moteur d'audit statique automatique** : Analyse des ZIP soumis (détection AST de fonctions proscrites `eval`, `exec`, `shell_exec`, fuites de chemins `../..`, vérification CSRF et validation syntaxique `php -l`).
-- [ ] **Portail Web de Soumission Développeurs** : Formulaire public pour soumettre un plugin ou un thème avec validation d'intégrité en temps réel.
-- [ ] **Gestion des Mises à Jour & Jeton Auteur** : Authentification par *Developer Secret Key* garantissant que seul l'auteur d'origine peut pousser une version supérieure.
-- [ ] **Automatisation GitHub & Arbitrage NemStudio18** : Création automatique d'une Pull Request isolée sur le dépôt dédié `NemStudio18/Community_Plugins_299koEVO` avec rapport d'audit, laissant le contrôle final du merge au mainteneur unique.
-- [ ] **Distinction Claire dans la Marketplace** :
+- [x] **Moteur d'audit statique automatique** : Analyse des ZIP soumis (détection AST de fonctions proscrites `eval`, `exec`, `shell_exec`, fuites de chemins `../..`, vérification CSRF et validation syntaxique `php -l`).
+- [x] **Portail Web de Soumission Développeurs** : Formulaire public pour soumettre un plugin ou un thème avec validation d'intégrité en temps réel.
+- [x] **Gestion des Mises à Jour & Jeton Auteur** : Authentification par *Developer Secret Key* garantissant que seul l'auteur d'origine peut pousser une version supérieure.
+- [x] **Automatisation GitHub & Arbitrage NemStudio18** : Création automatique d'une Pull Request isolée sur le dépôt dédié `NemStudio18/Community_Plugins_299koEVO` avec rapport d'audit, laissant le contrôle final du merge au mainteneur unique.
+- [x] **Distinction Claire dans la Marketplace** :
   - Métadonnées API avec canaux distincts (`official` vs `community` vs `exclusive`).
   - Badges visuels explicites dans l'administration (`🛡️ Officiel 299ko` vs `👥 Communauté`).
   - Modale de confirmation transparente informant l'utilisateur à l'installation d'un module tiers.
-- [ ] Graphe des dépendances, détection des hooks manquants et rapport de santé pré-installation.
+- [x] Graphe des dépendances, détection des hooks manquants et rapport de santé pré-installation.
 
 #### 2. `TaskScheduler` (Priorité Haute) — Autonomie d'exécution en arrière-plan
-- [ ] Ordonnanceur natif pour tâches périodiques et exécutions différées.
-- [ ] File d'attente persistante avec relance automatique après échec.
-- [ ] Verrouillage anti-concurrence contre les exécutions simultanées.
-- [ ] Historique et métriques d'exécution.
-- [ ] Déblocage des capacités asynchrones pour `newsletter`, `LocalFeed`, `BackupManager` et `Workflow`.
+- [x] Ordonnanceur natif pour tâches périodiques et exécutions différées (`TaskScheduler`).
+- [x] File d'attente persistante avec relance automatique après échec.
+- [x] Verrouillage anti-concurrence contre les exécutions simultanées.
+- [x] Historique et métriques d'exécution.
+- [x] Déblocage des capacités asynchrones pour `newsletter`, `LocalFeed`, `BackupManager` et `Workflow`.
 
 #### 3. `DataInspector` (Priorité Haute) — Cohérence des données multi-moteurs
 - [ ] Détection des entités orphelines et références croisées cassées.
@@ -73,7 +73,7 @@ flowchart TD
 
 #### Infrastructure & Système
 - [ ] **`SystemMonitor`** : Dashboard technique en temps réel (temps de réponse PHP, mémoire, temps des hooks, requêtes SQL).
-- [ ] **`BackupManager` & `SiteExporter`** : Sauvegarde 1-clic et migration intégrale (code + data + médias) en ZIP sécurisé.
+- [x] **`BackupManager` & `SiteExporter`** : Sauvegarde 1-clic et migration intégrale (code + data + médias) en ZIP sécurisé, snapshots automatiques pré-mise à jour (Core & Marketplace) et restauration d'urgence.
 - [ ] **`MediaManager`** : Médiathèque transversale avec détection des fichiers inutilisés, conversion WebP et gestion des droits.
 
 #### Outils Développeurs & Automatisation
@@ -82,11 +82,12 @@ flowchart TD
 - [ ] **`PluginSandbox`** : Environnement de test éphémère pour exécuter un plugin sans impacter le site réel.
 
 #### Évolutions des Extensions & Plugins
-- [ ] **`Blog` (Gestion temporelle et éditoriale fine)** :
+- [x] **`Blog` (Gestion temporelle et éditoriale fine & Modernisation PSR-4)** :
   - **Séparation des dates** : distinction claire entre date de création (`created_at`), date de parution/publication effective (`published_at`) et date de dernière modification (`updated_at`).
   - **Précision horaire** : passage du format jour simple (`Y-m-d`) à l'horodatage complet (`Y-m-d H:i:s`) avec heure et minute.
   - **Publication programmée / différée** : l'article reste masqué aux visiteurs jusqu'à ce que `published_at <= NOW()`.
   - **Affichage éditorial conditionnel** : mention publique *« Publié le [date] à [heure] »* et, en cas de révision ultérieure, *« Mis à jour le [date] à [heure] »*.
+  - **Suppression intégrale du legacy** : éradication du dossier `entities/` et suppression de tous les alias pour un modèle 100% PSR-4 propre.
 
 ---
 

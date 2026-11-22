@@ -39,29 +39,37 @@ class Zip
     public static function createZipFromFolder(string $folder, string $filename, array $ignoreRegex = []): bool
     {
         $zip = new \ZipArchive();
-        $zip->open($filename, \ZipArchive::CREATE);
+        if ($zip->open($filename, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return false;
+        }
+        $realRoot = rtrim(str_replace('\\', '/', realpath($folder) ?: $folder), '/');
         $itemsToSave = Util::scanDirRecursive($folder);
+
         foreach ($itemsToSave['dir'] as $dir) {
-            $dir = trim($dir,'.');
-            $dir = str_replace('\\', '/', $dir);
-            $dir = trim($dir, '/');
+            $normalizedDir = str_replace('\\', '/', $dir);
+            $localDir = trim(substr($normalizedDir, strlen($realRoot)), '/');
+            if ($localDir === '' || $localDir === '.' || $localDir === '..') {
+                continue;
+            }
             foreach ($ignoreRegex as $regex) {
-                if (preg_match($regex, $dir)) {
+                if (preg_match($regex, $localDir) || preg_match($regex, $normalizedDir)) {
                     continue 2;
                 }
             }
-            $zip->addEmptyDir($dir);
+            $zip->addEmptyDir($localDir);
         }
         foreach ($itemsToSave['file'] as $file) {
-            $file = trim($file,'.');
-            $file = str_replace('\\', '/', $file);
-            $file = trim($file, '/');
+            $normalizedFile = str_replace('\\', '/', $file);
+            $localFile = trim(substr($normalizedFile, strlen($realRoot)), '/');
+            if ($localFile === '') {
+                continue;
+            }
             foreach ($ignoreRegex as $regex) {
-                if (preg_match($regex, $file)) {
+                if (preg_match($regex, $localFile) || preg_match($regex, $normalizedFile)) {
                     continue 2;
                 }
             }
-            $zip->addFile($file, $file);
+            $zip->addFile($file, $localFile);
         }
         $zip->close();
         return true;
