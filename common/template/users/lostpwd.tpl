@@ -4,7 +4,7 @@
 		{% HOOK.frontHead %}
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 		<meta name="robots" content="noindex"><meta name="googlebot" content="noindex">
-		<title>299ko - {{Lang.users-lost-password}}</title>
+		<title>299koEVO - {{Lang.users-lost-password}}</title>
 		<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5"/>
 		<meta name="description" content="{{SHOW.metaDescriptionTag}}"/>
 		<link rel="icon" href="{{SHOW.themeIcon}}"/>
@@ -34,7 +34,7 @@
                     <input type="submit" class="button" value="{{Lang.validate}}"/>
                 </p>
 				<p class="just_using">
-					<a target="_blank" href="https://github.com/299ko/">{{Lang.site-just-using( )}}</a>
+					<a target="_blank" href="https://github.com/299koEVO/">{{Lang.site-just-using( )}}</a>
 				</p>
 			</form>
 		</div>

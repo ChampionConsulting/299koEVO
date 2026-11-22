@@ -6,7 +6,7 @@
 
         <p class="field">
             <label for="register-username">{{Lang.users-registration-username}}</label>
-            <input id="register-username" type="text" name="username" required minlength="3" maxlength="60" autocomplete="username" placeholder="ex: mon_pseudo">
+            <input id="register-username" type="text" name="username" required minlength="3" maxlength="60" autocomplete="username" placeholder="ex: username">
             <span class="field-validation" id="username-validation"></span>
         </p>
 
@@ -20,14 +20,14 @@
             <label for="register-password">{{Lang.users-registration-password}}</label>
             <div class="password-input-wrapper">
                 <input id="register-password" type="password" name="password" required minlength="8" autocomplete="new-password">
-                <button type="button" class="toggle-password" data-target="register-password" aria-label="Afficher/Masquer le mot de passe" title="Afficher/Masquer le mot de passe">
+                <button type="button" class="toggle-password" data-target="register-password" aria-label="Show/Hide password" title="Show/Hide password">
                     <i class="fa-solid fa-eye"></i>
                 </button>
             </div>
             <div class="password-requirements" id="password-requirements">
-                <small>Le mot de passe doit contenir :</small>
+                <small>The password must contain:</small>
                 <ul>
-                    <li id="req-length" class="requirement">Au moins 8 caractères</li>
+                    <li id="req-length" class="requirement">At least 8 characters</li>
                 </ul>
             </div>
             <span class="field-validation" id="password-validation"></span>
@@ -37,7 +37,7 @@
             <label for="register-password-confirm">{{Lang.users-registration-password-confirm}}</label>
             <div class="password-input-wrapper">
                 <input id="register-password-confirm" type="password" name="password_confirm" required minlength="8" autocomplete="new-password">
-                <button type="button" class="toggle-password" data-target="register-password-confirm" aria-label="Afficher/Masquer le mot de passe" title="Afficher/Masquer le mot de passe">
+                <button type="button" class="toggle-password" data-target="register-password-confirm" aria-label="Show/Hide password" title="Show/Hide password">
                     <i class="fa-solid fa-eye"></i>
                 </button>
             </div>

@@ -72,9 +72,9 @@
         <div class="message">
             {% IF maintenanceMessage %}
                 {{maintenanceMessage}}
-            {% ELSE %}
-                <p>Notre site est actuellement en maintenance pour améliorer votre expérience.</p>
-                <p>Nous serons de retour très bientôt.</p>
+            {% ELSE %} 
+			<p>Our site is currently undergoing maintenance to improve your experience.</p>  
+			<p>We will be back very soon.</p>
             {% ENDIF %}
         </div>
         

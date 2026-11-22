@@ -1,47 +1,46 @@
 <section class="user-profile-danger">
     <div class="profile-danger-header">
-        <h1>Zone de danger</h1>
+        <h1>Danger zone </h1>
         <a href="{{ ROUTER.generate("profile") }}" class="button secondary">
-            <i class="fa-solid fa-arrow-left"></i> Retour au profil
+            <i class="fa-solid fa-arrow-left"></i> Back to profile
         </a>
     </div>
 
     <!-- Section de suppression de compte -->
     <div class="user-delete-account">
         <h2>
-            <i class="fa-solid fa-exclamation-triangle"></i> Suppression de compte
+            <i class="fa-solid fa-exclamation-triangle"></i> Account deletion
         </h2>
-        <p class="user-delete-lead">
-            <strong>Attention :</strong> La suppression de votre compte est définitive et irréversible. 
-            Toutes vos données seront supprimées, y compris :
+        <p class="user-delete-lead">  
+		<strong>Warning:</strong> Deleting your account is permanent and irreversible. All your data will be deleted, including:
         </p>
-        <ul class="user-delete-list">
-            <li>Vos informations personnelles</li>
-            <li>Vos contributions (revendications, suggestions, propositions)</li>
-            <li>Vos photos et contenus uploadés</li>
-            <li>Vos messages privés</li>
-            <li>Toutes les données associées à votre compte</li>
+        <ul class="user-delete-list"> 
+		<li>Your personal information</li> 
+		<li>Your contributions (claims, suggestions, proposals)</li> 
+		<li>Your photos and uploaded content</li>       
+		<li>Your private messages</li>               
+		<li>All data associated with your account</li>
         </ul>
         <p class="user-delete-warn">
-            Cette action ne peut pas être annulée. Êtes-vous absolument sûr de vouloir continuer ?
+            This action cannot be undone. Are you absolutely sure you want to continue?
         </p>
-        <form method="post" action="{{profileDeleteLink}}" autocomplete="off" onsubmit="return confirm('Êtes-vous absolument sûr de vouloir supprimer votre compte ? Cette action est irréversible et toutes vos données seront définitivement perdues.');">
+        <form method="post" action="{{profileDeleteLink}}" autocomplete="off" onsubmit="return confirm('Are you absolutely sure you want to delete your account? This action is irreversible, and all your data will be permanently lost.');">
             <input type="hidden" name="_csrf" value="{{_csrfToken}}">
             <p>
                 <label for="delete-confirmation" class="user-delete-label">
-                    Pour confirmer, tapez "supprimer" ci-dessous :
+                   To confirm, type "delete" below:
                 </label>
                 <input id="delete-confirmation" type="text" name="delete_confirmation"
-                       placeholder="supprimer"
+                       placeholder="delete"
                        class="user-delete-confirm-input"
                        required autocomplete="off">
             </p>
             <p class="user-delete-actions">
                 <button type="submit" class="button alert user-delete-submit-btn">
-                    <i class="fa-solid fa-trash"></i> Supprimer mon compte définitivement
+                    <i class="fa-solid fa-trash"></i> Delete my account permanently
                 </button>
-                <a href="{{ ROUTER.generate("profile") }}" class="button secondary user-delete-cancel-btn">Annuler</a>
-            </p>
+                <a href="{{ ROUTER.generate("profile") }}" class="button secondary user-delete-cancel-btn">Cancel</a>
+            </p>                                                                                                          
         </form>
     </div>
 </section>

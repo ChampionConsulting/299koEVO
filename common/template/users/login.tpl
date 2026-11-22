@@ -5,15 +5,15 @@
         <input type="text" name="_hp_website" value="" class="hp-field" aria-hidden="true" tabindex="-1" autocomplete="off" style="display:none; position:absolute; left:-9999px; visibility:hidden; pointer-events:none;" rel="nofollow">
         
         <p class="field">
-            <label for="adminEmail">Adresse email ou pseudo</label>
-            <input type="text" id="adminEmail" name="adminEmail" required autocomplete="username" placeholder="ex: mon_pseudo ou email@exemple.com">
+            <label for="adminEmail">Email address or username</label>
+            <input type="text" id="adminEmail" name="adminEmail" required autocomplete="username" placeholder="ex: username or email@exemple.com">
             <span class="field-validation" id="email-validation"></span>
         </p>
         <p class="field">
             <label for="adminPwd">{{Lang.password}}</label>
             <div class="password-input-wrapper">
                 <input type="password" id="adminPwd" name="adminPwd" required autocomplete="current-password">
-                <button type="button" class="toggle-password" aria-label="Afficher/Masquer le mot de passe" title="Afficher/Masquer le mot de passe">
+                <button type="button" class="toggle-password" aria-label="Show/Hide password" title="Show/Hide password">
                     <i class="fa-solid fa-eye" id="toggle-password-icon"></i>
                 </button>
             </div>
@@ -35,7 +35,7 @@
         <p class="links">
             <a href="{{lostLink}}">{{Lang.lost-password}}</a>
             <span class="auth-sep">|</span>
-            <a href="{{ ROUTER.generate('register') }}">Pas encore de compte ?</a>
+            <a href="{{ ROUTER.generate('register') }}">Don't have an account yet?</a>
         </p>
     </form>
 </section>

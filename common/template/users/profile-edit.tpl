@@ -2,20 +2,20 @@
 <section class="user-profile-edit">
     <div class="profile-edit-header" style="margin-bottom: 1.5rem;">
         <a href="{{ ROUTER.generate("profile") }}" class="button secondary">
-            <i class="fa-solid fa-arrow-left"></i> Retour au profil
+            <i class="fa-solid fa-arrow-left"></i> Back to profile
         </a>
     </div>
 
     <!-- BARRE DE NAVIGATION PAR ONGLETS -->
     <div class="profile-tabs-nav">
         <button type="button" class="profile-tab-btn active" data-tab="tab-account">
-            <i class="fa-solid fa-user-gear"></i> Informations du compte
+            <i class="fa-solid fa-user-gear"></i> Account information
         </button>
         <button type="button" class="profile-tab-btn" data-tab="tab-photo">
-            <i class="fa-solid fa-camera"></i> Photo de profil
+            <i class="fa-solid fa-camera"></i> Profile picture
         </button>
         <button type="button" class="profile-tab-btn" data-tab="tab-public">
-            <i class="fa-solid fa-id-badge"></i> Profil Public & Réseaux
+            <i class="fa-solid fa-id-badge"></i> Public Profile & Networks
         </button>
     </div>
 
@@ -24,15 +24,15 @@
         <!-- 1. ONGLET PHOTO DE PROFIL -->
         <div class="profile-tab-pane" id="tab-photo" style="display: none;">
             <div class="user-auth-form user-profile-photo-container">
-                <h2>Photo de profil</h2>
+                <h2>Profile picture</h2>
                 {% IF hasProfilePhoto %}
                 <div class="profile-photo-preview">
-                    <img src="{{profilePhotoUrl}}" alt="Photo de profil">
+                    <img src="{{profilePhotoUrl}}" alt="Profile picture">
                 </div>
                 <form method="post" action="{{profilePhotoDeleteLink}}" class="profile-photo-actions">
                     <input type="hidden" name="_csrf" value="{{_csrfToken}}">
                     <button type="submit" class="button alert">
-                        <i class="fa-solid fa-trash"></i> Supprimer la photo
+                        <i class="fa-solid fa-trash"></i> Delete the photo
                     </button>
                 </form>
                 {% ENDIF %}
@@ -40,13 +40,13 @@
                 <form method="post" action="{{profilePhotoUploadLink}}" enctype="multipart/form-data" class="profile-photo-upload-form">
                     <input type="hidden" name="_csrf" value="{{_csrfToken}}">
                     <p>
-                        <label for="profile-photo-input">{% IF hasProfilePhoto %}Remplacer la photo{% ELSE %}Ajouter une photo{% ENDIF %}</label>
+                        <label for="profile-photo-input">{% IF hasProfilePhoto %}Replace la photo{% ELSE %}Add a photo{% ENDIF %}</label>
                         <input id="profile-photo-input" type="file" name="profile_photo" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required>
-                        <small class="form-help">Formats acceptés : JPG, PNG, GIF, WebP. Taille maximale : 5 MB. L'image sera redimensionnée à 500x500px maximum.</small>
+                        <small class="form-help">Accepted formats: JPG, PNG, GIF, WebP. Maximum size: 5 MB. The image will be resized to a maximum of 500x500px.</small>
                     </p>
                     <p>
                         <button type="submit" class="button success">
-                            <i class="fa-solid fa-upload"></i> {% IF hasProfilePhoto %}Remplacer{% ELSE %}Télécharger{% ENDIF %}
+                            <i class="fa-solid fa-upload"></i> {% IF hasProfilePhoto %}Replace{% ELSE %}Download{% ENDIF %}
                         </button>
                     </p>
                 </form>
@@ -60,7 +60,7 @@
             <!-- 2. ONGLET COMPTE & IDENTITÉ & MOT DE PASSE -->
             <div class="profile-tab-pane active" id="tab-account">
                 <div class="user-auth-form">
-                    <h2>Informations du compte</h2>
+                    <h2>Account information</h2>
 
                     <p>
                         <label for="profile-username">{{Lang.users-registration-username}}</label>
@@ -68,13 +68,13 @@
                     </p>
 
                     <p>
-                        <label for="profile-firstname">Prénom</label>
-                        <input id="profile-firstname" type="text" name="firstname" value="{{firstname}}" maxlength="60" placeholder="Votre prénom">
+                        <label for="profile-firstname">First Name </label>
+                        <input id="profile-firstname" type="text" name="firstname" value="{{firstname}}" maxlength="60" placeholder="first name">
                     </p>
 
                     <p>
-                        <label for="profile-lastname">Nom</label>
-                        <input id="profile-lastname" type="text" name="lastname" value="{{lastname}}" maxlength="60" placeholder="Votre nom">
+                        <label for="profile-lastname">Last Name</label>
+                        <input id="profile-lastname" type="text" name="lastname" value="{{lastname}}" maxlength="60" placeholder="last name">
                     </p>
 
                     <p>
@@ -85,14 +85,14 @@
                     <div style="margin-top: 2rem; border-top: 1px solid var(--border-color, #eee); padding-top: 1.5rem;">
                         <h3>{{Lang.users-registration-password}}</h3>
                         <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-                            Laissez vide pour conserver votre mot de passe actuel.
+                            Leave blank to keep your current password.
                         </p>
                         
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label for="profile-password">{{Lang.users-registration-password}}</label>
                             <div class="password-input-wrapper">
                                 <input id="profile-password" type="password" name="password" autocomplete="new-password">
-                                <button type="button" class="toggle-password" aria-label="Afficher/Masquer le mot de passe" title="Afficher/Masquer le mot de passe">
+                                <button type="button" class="toggle-password" aria-label="Show/Hide password" title="Show/Hide password">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
                             </div>
@@ -102,7 +102,7 @@
                             <label for="profile-password-confirm">{{Lang.users-registration-password-confirm}}</label>
                             <div class="password-input-wrapper">
                                 <input id="profile-password-confirm" type="password" name="password_confirm" autocomplete="new-password">
-                                <button type="button" class="toggle-password" aria-label="Afficher/Masquer le mot de passe" title="Afficher/Masquer le mot de passe">
+                                <button type="button" class="toggle-password" aria-label="Show/Hide password" title="Show/Hide password">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
                             </div>
@@ -111,7 +111,7 @@
 
                     <div style="margin-top: 2rem; border-top: 1px solid var(--border-color, #eee); padding-top: 1rem;">
                         <button type="submit" class="button success">{{Lang.submit}}</button>
-                        <a href="{{ ROUTER.generate("profile") }}" class="button secondary" style="margin-left: 0.5rem;">Annuler</a>
+                        <a href="{{ ROUTER.generate("profile") }}" class="button secondary" style="margin-left: 0.5rem;">Cancel</a>
                     </div>
                 </div>
             </div>
@@ -119,9 +119,9 @@
             <!-- 3. ONGLET PROFIL SOCIAL & PUBLIC -->
             <div class="profile-tab-pane" id="tab-public" style="display: none;">
                 <div class="user-auth-form">
-                    <h2>Profil Social & Informations Publiques</h2>
+                    <h2>Social Profile and Public Information</h2>
                     <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-                        Ces informations sont visibles sur votre profil public communautaire.
+                        This information is visible on your public community profile.
                     </p>
 
                     <div class="dynamic-profile-fields">
@@ -130,7 +130,7 @@
 
                     <div style="margin-top: 2rem; border-top: 1px solid var(--border-color, #eee); padding-top: 1rem;">
                         <button type="submit" class="button success">{{Lang.submit}}</button>
-                        <a href="{{ ROUTER.generate("profile") }}" class="button secondary" style="margin-left: 0.5rem;">Annuler</a>
+                        <a href="{{ ROUTER.generate("profile") }}" class="button secondary" style="margin-left: 0.5rem;">Cancel</a>
                     </div>
                 </div>
             </div>

@@ -21,15 +21,14 @@ use Core\Lang;
 use Core\Plugin\PluginsManager;
 use Utils\Show;
 
-if (file_exists(DATA . 'config.json'))
-    die('A config file is already exist');
+if (file_exists(DATA . 'config.json')) die('A config file is already exist');
 $core = Core::getInstance();
 $pluginsManager = PluginsManager::getInstance();
 $url = $core->makeSiteUrl() . '/install.php';
 
 // ----------------- Begin tests
 // Test PHP Version
-$minPHPVersion = 7.4;
+$minPHPVersion = 8.0;
 $errorPHP = !((float) substr(phpversion(), 0, 3) >= $minPHPVersion);
 
 $errorFopen = true;
@@ -212,7 +211,7 @@ if (count($_POST) > 0) {
             'name' => 'Accueil',
             'position' => 1,
             'isHomepage' => '1',
-            'content' => "<p>Félicitations, l'installation de 299koEVO s'est déroulée avec succès !<br>Par mesure de sécurité, vous devez maintenant supprimer le fichier install.php du répertoire d'installation.</p>",
+            'content' => "<p>Congratulations, the installation of 299koEVO was successful!<br>For security reasons, you must now delete the install.php file from the installation directory.</p>",
             'isHidden' => 0,
             'file' => null,
             'mainTitle' => null,
@@ -235,7 +234,7 @@ if (count($_POST) > 0) {
             'name' => 'À propos',
             'position' => 2,
             'isHomepage' => '0',
-            'content' => "<p>Voici une page d'exemple créée lors de l'installation.</p><p>Vous pouvez la modifier, la renommer ou en créer d'autres depuis <strong>Administration &rarr; Pages</strong>.</p>",
+            'content' => "<p>This is an example page created during installation.</p><p>You can edit it, rename it, or create others via <strong>Administration &rarr; Pages</strong>.</p>",
             'isHidden' => 0,
             'file' => null,
             'mainTitle' => null,
@@ -531,7 +530,7 @@ if (count($_POST) > 0) {
                 </header>
 
                 <div class="install-body-inner">
-                    <h2 class="install-section-title"><i class="fa-solid fa-stethoscope"></i> Vérification de l'environnement</h2>
+                    <h2 class="install-section-title"><i class="fa-solid fa-stethoscope"></i> Environment check</h2>
                     <div class="msg-container">
                         <?php
                         $renderCheck = static function (string $type, string $text): void {
@@ -591,7 +590,7 @@ if (count($_POST) > 0) {
                     <?php if (!($errorDataWrite || $errorPHP || $errorRewrite === true)) { ?>
                     <form method="post" action="" class="install-form">
                         <div class="install-panel">
-                            <h2 class="install-section-title"><i class="fa-solid fa-user-shield"></i> Compte administrateur &amp; langue</h2>
+                            <h2 class="install-section-title"><i class="fa-solid fa-user-shield"></i> Administrator account & language</h2>
                             <div class="install-grid-2">
                                 <p class="install-field">
                                     <label for="lang-select"><?php echo Lang::get('install-lang-choice'); ?></label>
@@ -693,7 +692,7 @@ if (count($_POST) > 0) {
                 </div>
 
                 <footer>
-                    <a target="_blank" href="https://github.com/299ko/"><?php echo Lang::get('site-just-using', VERSION); ?></a>
+                    <a target="_blank" href="https://github.com/299koEVO/"><?php echo Lang::get('site-just-using', VERSION); ?></a>
                 </footer>
             </section>
         </main>

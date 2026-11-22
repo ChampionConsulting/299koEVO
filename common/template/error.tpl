@@ -5,22 +5,22 @@
         </div>
 
         <div class="dc-error-badge tone-{{errTone|default('danger')}}">
-            {{errBadge|default('ERREUR')}}
+            {{errBadge|default('ERROR')}}
         </div>
 
-        <h1 class="dc-error-title">{{errTitle|default('Page introuvable')}}</h1>
+        <h1 class="dc-error-title">{{errTitle|default('Page not found')}}</h1>
 
-        <p class="dc-error-msg">{{errMessage|default('La page demandée n\'est pas disponible.')}}</p>
+        <p class="dc-error-msg">{{errMessage|default('The requested page is not available.')}}</p>
 
         <div class="dc-error-actions">
             <a href="{{homeUrl|default('/')}}" id="dcErrorHomeLink" class="dc-error-btn" style="color: #ffffff !important; background: var(--evo-accent, var(--ag-accent, #B83E22)) !important;">
                 <i class="fa-solid fa-house" style="color: #ffffff !important;"></i>
-                <span style="color: #ffffff !important;">Retour au site</span>
+                <span style="color: #ffffff !important;">Return to the site</span>
             </a>
         </div>
 
         <p class="dc-error-redirect" aria-live="polite">
-            Redirection automatique vers l'accueil dans <strong id="dcErrorCountdown">8</strong> secondes…
+            Automatic redirection to the homepage in<strong id="dcErrorCountdown">8</strong> seconds…
         </p>
     </div>
 </div>

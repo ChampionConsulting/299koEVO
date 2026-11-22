@@ -1,27 +1,25 @@
     <div class="profile-tabs-nav" role="tablist">
         <button type="button" class="profile-tab-button active" role="tab" aria-selected="true" aria-controls="tab-profile" id="tab-button-profile" data-tab="profile">
-            <i class="fa-solid fa-user"></i> <span>Profil</span>
+            <i class="fa-solid fa-user"></i> <span>Profile</span>
         </button>
         {% IF hasStats %}
         <button type="button" class="profile-tab-button" role="tab" aria-selected="false" aria-controls="tab-contributions" id="tab-button-contributions" data-tab="contributions">
-            <i class="fa-solid fa-chart-line"></i> <span>Mes contributions</span>
+            <i class="fa-solid fa-chart-line"></i> <span>My contributions</span>
         </button>
         {% ENDIF %}
         <a href="{{ ROUTER.generate("profile-edit") }}" class="profile-tab-button" role="tab">
-            <i class="fa-solid fa-edit"></i> <span>Modifier</span>
+            <i class="fa-solid fa-edit"></i> <span>Edit</span>
         </a>
         <a href="{{ ROUTER.generate("profile-danger") }}" class="profile-tab-button profile-tab-danger" role="tab">
-             <i class="fa-solid fa-exclamation-triangle"></i> <span>Zone de danger</span>
+             <i class="fa-solid fa-exclamation-triangle"></i> <span>Danger zone</span>
         </a>
         {% HOOK.user:profile-tabs(user) %}
     </div>
     
     <section class="user-profile">
-    <!-- Système d'onglets -->
+    <!-- Tab system -->
 
-    <div class="profile-tabs">
-
-
+    <div class="profile-tabs"> 
             <!-- Onglet Profil -->
         <div class="profile-tab-content active" id="tab-profile" role="tabpanel" aria-labelledby="tab-button-profile">
             <div class="profile-header">
@@ -46,7 +44,7 @@
                     
                     <div class="profile-data-list">
                         <div class="profile-data-item">
-                            <span class="data-label" title="Pseudo"><i class="fa-solid fa-user"></i></span>
+                            <span class="data-label" title="Username"><i class="fa-solid fa-user"></i></span>
                             <span class="data-value">{{user.username}}</span>
                         </div>
                         <div class="profile-data-item">
@@ -56,7 +54,7 @@
                                 {% IF public_email %}
                                     <span class="badge success profile-badge">Public</span>
                                 {% ELSE %}
-                                    <span class="badge secondary profile-badge"><i class="fa-solid fa-eye-slash"></i> Privé</span>
+                                    <span class="badge secondary profile-badge"><i class="fa-solid fa-eye-slash"></i> Private</span>
                                 {% ENDIF %}
                             </span>
                         </div>
@@ -72,9 +70,9 @@
                 </div>
             </div>
 
-            <!-- Section Réglages -->
+            <!-- Section Settings -->
             <div class="profile-settings-section">
-                <h2 class="profile-settings-title"><i class="fa-solid fa-cog"></i> Réglages</h2>
+                <h2 class="profile-settings-title"><i class="fa-solid fa-cog"></i> Settings</h2>
                 
                 <div class="settings-list">
                     
@@ -85,9 +83,9 @@
                             <span class="toggle-slider"></span>
                         </label>
                         <div class="setting-info">
-                            <span class="setting-label">Rendre mon mail public</span>
+                            <span class="setting-label">Make my email public</span>
                             <span class="setting-description">
-                                Permet aux autres utilisateurs de voir votre adresse email sur votre profil.
+                                Allows other users to see your email address on your profile.
                             </span>
                         </div>
                     </div>
@@ -100,9 +98,9 @@
                             <span class="toggle-slider"></span>
                         </label>
                         <div class="setting-info">
-                            <span class="setting-label">Mode Sombre</span>
+                            <span class="setting-label">Dark Mode</span>
                             <span class="setting-description">
-                                Bascule l'apparence du site entre le mode clair et le mode sombre.
+                                Toggles the site's appearance between light mode and dark mode.
                             </span>
                         </div>
                     </div>
@@ -117,7 +115,7 @@
         <!-- Onglet Mes contributions -->
         <div class="profile-tab-content" id="tab-contributions" role="tabpanel" aria-labelledby="tab-button-contributions">
             <div class="profile-stats">
-                <h2 class="profile-subsection-title">Mes statistiques</h2>
+                <h2 class="profile-subsection-title">My statistics</h2>
                 
                 {% IF stats %}
                 <div class="profile-stats-grid">
@@ -134,11 +132,11 @@
                 {% ELSE %}
                 <div class="profile-empty-state">
                     <i class="fa-solid fa-chart-line profile-empty-icon"></i>
-                    <p class="profile-empty-text">Aucune statistique disponible pour le moment.</p>
+                    <p class="profile-empty-text">No statistics available at the moment.</p>
                 </div>
                 {% ENDIF %}
 
-                <h2 class="profile-subsection-title">Activités récentes</h2>
+                <h2 class="profile-subsection-title">Recent activities</h2>
                 
                 {% IF activities %}
                     {% FOR activityGroup IN activities %}
@@ -162,7 +160,7 @@
                     {% ENDFOR %}
                 {% ELSE %}
                     <div class="profile-empty-activity">
-                        <p>Aucune activité récente.</p>
+                        <p>No recent activity.</p>
                     </div>
                 {% ENDIF %}
             </div>
@@ -265,7 +263,7 @@
                             if (this.checked) {
                                 emailContainer.innerHTML = '{{user.email}} <span class="badge success profile-badge">Public</span>';
                             } else {
-                                emailContainer.innerHTML = '{{user.email}} <span class="badge secondary profile-badge"><i class="fa-solid fa-eye-slash"></i> Privé</span>';
+                                emailContainer.innerHTML = '{{user.email}} <span class="badge secondary profile-badge"><i class="fa-solid fa-eye-slash"></i> Private</span>';
                             }
                         }
                     }
@@ -281,7 +279,7 @@
                                 }
                             });
                     }
-                    console.log('Réglage mis à jour:', setting);
+                    console.log('Setting updated:', setting);
                 } else {
                     // Revenir en arrière en cas d'erreur
                     this.checked = !this.checked;
@@ -291,7 +289,7 @@
             .catch(error => {
                 container.style.opacity = '1';
                 this.checked = !this.checked;
-                console.error('Erreur AJAX:', error);
+                console.error('AJAX error:', error);
                 alert('Erreur réseau ou serveur');
             });
         });
