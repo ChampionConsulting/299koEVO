@@ -150,6 +150,11 @@ class ContentParser
                 return call_user_func(static::$shortcodes[$shortcode], $attributes);
             }
 
+            // Shortcode natif [version] : version courante du CMS (constante VERSION)
+            if ($shortcode === 'version' && defined('VERSION')) {
+                return htmlspecialchars((string) VERSION, ENT_QUOTES, 'UTF-8');
+            }
+
             // If the shortcode doesn't exist, return the original content
             return $matches[0];
         }, $content);
