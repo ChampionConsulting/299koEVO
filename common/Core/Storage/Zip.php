@@ -48,7 +48,7 @@ class Zip
         foreach ($itemsToSave['dir'] as $dir) {
             $normalizedDir = str_replace('\\', '/', $dir);
             $localDir = trim(substr($normalizedDir, strlen($realRoot)), '/');
-            if ($localDir === '' || $localDir === '.' || $localDir === '..') {
+            if ($localDir === '' || $localDir === '.' || $localDir === '..' || str_ends_with($localDir, '/.') || str_ends_with($localDir, '/..')) {
                 continue;
             }
             foreach ($ignoreRegex as $regex) {
